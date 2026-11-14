@@ -1,0 +1,312 @@
+{
+  "contract_version": "1.0.0-rc.1",
+  "status": "release-candidate",
+  "interfaces": {
+    "transport": 2,
+    "observations": [
+      1,
+      2
+    ],
+    "player_python": 1,
+    "world_python": 1,
+    "local_controller": 1
+  },
+  "supported_protocols": [
+    1,
+    2
+  ],
+  "encoding": {
+    "envelope": {
+      "type": "string",
+      "payload": "object"
+    },
+    "array_byteorder": "little",
+    "array_order": "C",
+    "array_types": [
+      "bool",
+      "int8",
+      "uint8",
+      "int16",
+      "uint16",
+      "int32",
+      "uint32",
+      "int64",
+      "uint64",
+      "float32",
+      "float64"
+    ],
+    "max_message_bytes": 33554432,
+    "max_array_bytes": 25165824
+  },
+  "tables": {
+    "cells_v2": [
+      {
+        "name": "cell_id",
+        "dtype": "<u4"
+      },
+      {
+        "name": "x",
+        "dtype": "<i2"
+      },
+      {
+        "name": "y",
+        "dtype": "<i2"
+      },
+      {
+        "name": "type",
+        "dtype": "<i2"
+      },
+      {
+        "name": "state",
+        "dtype": "<i8"
+      },
+      {
+        "name": "energy",
+        "dtype": "<i4"
+      },
+      {
+        "name": "bonds",
+        "dtype": "|u1"
+      },
+      {
+        "name": "entity",
+        "dtype": "<i4"
+      },
+      {
+        "name": "role",
+        "dtype": "|i1"
+      },
+      {
+        "name": "sense_radius",
+        "dtype": "|i1"
+      }
+    ],
+    "tiles_v2": [
+      {
+        "name": "x",
+        "dtype": "<i2"
+      },
+      {
+        "name": "y",
+        "dtype": "<i2"
+      },
+      {
+        "name": "occupant",
+        "dtype": "|i1"
+      },
+      {
+        "name": "species",
+        "dtype": "<i2"
+      },
+      {
+        "name": "type",
+        "dtype": "<i2"
+      },
+      {
+        "name": "state",
+        "dtype": "<i8"
+      },
+      {
+        "name": "energy",
+        "dtype": "<i4"
+      },
+      {
+        "name": "food",
+        "dtype": "<f4"
+      },
+      {
+        "name": "temp",
+        "dtype": "<f4"
+      },
+      {
+        "name": "env_visible",
+        "dtype": "|b1"
+      }
+    ],
+    "events_v2": [
+      {
+        "name": "kind",
+        "dtype": "|i1"
+      },
+      {
+        "name": "cell_id",
+        "dtype": "<u4"
+      },
+      {
+        "name": "action",
+        "dtype": "|i1"
+      },
+      {
+        "name": "code",
+        "dtype": "|i1"
+      },
+      {
+        "name": "other",
+        "dtype": "<u4"
+      }
+    ],
+    "intentions_v1": [
+      {
+        "name": "src_x",
+        "dtype": "<i2"
+      },
+      {
+        "name": "src_y",
+        "dtype": "<i2"
+      },
+      {
+        "name": "tgt_x",
+        "dtype": "<i2"
+      },
+      {
+        "name": "tgt_y",
+        "dtype": "<i2"
+      },
+      {
+        "name": "action",
+        "dtype": "|i1"
+      },
+      {
+        "name": "strength",
+        "dtype": "<i2"
+      },
+      {
+        "name": "param",
+        "dtype": "<i4"
+      }
+    ],
+    "intentions_v2": [
+      "cell_id",
+      "action",
+      "dx",
+      "dy",
+      "param"
+    ]
+  },
+  "actions": {
+    "move": 0,
+    "attack": 1,
+    "reproduce": 2,
+    "eat": 3,
+    "change": 4,
+    "die": 5,
+    "set_state": 6,
+    "bond": 7,
+    "unbond": 8,
+    "transfer": 9,
+    "move_group": 10,
+    "sense": 11
+  },
+  "result_codes": {
+    "ok": 0,
+    "invalid": 1,
+    "no_energy": 2,
+    "duplicate": 3,
+    "disabled": 4,
+    "blocked": 5,
+    "contested": 6,
+    "interrupted": 7,
+    "role": 8
+  },
+  "occupants": {
+    "empty": 0,
+    "mine_bonded": 1,
+    "mine": 2,
+    "other": 3,
+    "hidden": 4,
+    "outside": 5
+  },
+  "player_entrypoints": [
+    "decide_cell",
+    "decide_entity",
+    "decide_unity",
+    "decide"
+  ],
+  "world_hooks": {
+    "on_epoch": "(summary, tick) -> parameters",
+    "filter_actions": "(intentions, players, world_view, tick) -> boolean mask",
+    "after_actions": "(events, world_view, tick) -> commands",
+    "before_ecology": "(world_view, tick) -> commands",
+    "on_event": "(event, world_view) -> commands"
+  },
+  "identity": {
+    "cell": "(world_run, cell_id)",
+    "entity": "(world_run, entity_id)",
+    "unity": "client-local view; no authoritative ID or membership protocol"
+  },
+  "roles": {
+    "none": 0,
+    "boundary": 1,
+    "interior": 2
+  },
+  "event_kinds": {
+    "result": 0,
+    "born": 1,
+    "died": 2
+  },
+  "death_causes": {
+    "attack": 1,
+    "ecology": 2,
+    "self": 3
+  },
+  "bond_offsets": [
+    [
+      -1,
+      -1
+    ],
+    [
+      0,
+      -1
+    ],
+    [
+      1,
+      -1
+    ],
+    [
+      -1,
+      0
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      -1,
+      1
+    ],
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "intention_limits": {
+    "max_per_cell_per_tick": 1,
+    "cell_id": [
+      1,
+      4294967295
+    ],
+    "param": [
+      0,
+      2147483647
+    ],
+    "wire_offset": [
+      -8,
+      8
+    ],
+    "effective_neighbor_offset": [
+      -1,
+      1
+    ],
+    "max_silent_ticks": 3
+  },
+  "extensions": {
+    "biomes": "optional uint8, one per tiles row; 0 = unavailable",
+    "materials": "optional uint8, one per tiles row; 0 = ordinary or unavailable; check env_visible"
+  },
+  "authority": "server validates effects; player programs and local models propose actions",
+  "gui_api": "experimental; /api/state and UI layout are not the game transport"
+}

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CellGame · 物种实验室</title>
+<style>
+:root{color-scheme:dark;--bg:#070909;--panel:#0c100f;--panel2:#0f1513;--line:#1b2420;--line2:#26322d;--text:#d9e3dd;--muted:#6f7f77;--dim:#4c5953;--accent:#b8f36b;--accent-ink:#0b1406;--warn:#ffb38a;--cyan:#7fdcff;--mono:"JetBrains Mono","Cascadia Code",Consolas,ui-monospace,monospace;--sans:Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:1px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:wait}
+[hidden]{display:none!important}
+/* top bar */
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 20px;border-bottom:1px solid var(--line);background:#070909f2;backdrop-filter:blur(6px)}
+.brand{font:600 12px var(--mono);letter-spacing:.14em;display:flex;align-items:center;gap:10px}
+.brand b{color:var(--accent);font-weight:600}
+.brand .navnote{color:var(--muted);letter-spacing:.04em}
+.top-right{display:flex;align-items:center;gap:10px}
+.statuspill{font:11px var(--mono);color:var(--muted);border:1px solid var(--line2);border-radius:4px;padding:3px 8px;white-space:nowrap}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-right:7px;vertical-align:1px}
+.statuspill.online .dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.top details{position:relative}
+.top summary{list-style:none;cursor:pointer;font:11px var(--mono);color:var(--text);border:1px solid var(--line2);border-radius:4px;padding:3px 8px}
+.top summary::-webkit-details-marker{display:none}
+.connect-pop{position:absolute;right:0;top:32px;width:300px;background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:14px;display:grid;gap:8px}
+.connect-pop label{font:10px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.connect-pop p{margin:0;font-size:11px;color:var(--muted)}
+.profile-row,.connect-actions{display:flex;gap:6px;align-items:center}
+.profile-row .btn,.connect-actions .btn{flex:1}
+input[type=color]{width:42px;height:30px;padding:2px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2)}
+/* layout */
+main{display:grid;grid-template-columns:400px minmax(0,1fr);gap:14px;padding:14px 20px 40px;max-width:1500px;margin:auto}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.label{font:600 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:lowercase}
+.label::before{content:"// ";color:var(--dim)}
+.meta{font:11px var(--mono);color:var(--muted)}
+.meta.accent{color:var(--accent)}
+.hint{font-size:11px;color:var(--muted);margin:8px 0 0}
+/* controls */
+.btn{border:1px solid var(--line2);background:var(--panel2);border-radius:4px;padding:6px 11px;font:600 12px var(--sans)}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+select,input[type=text],input[type=url],input[type=number],textarea{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:4px;padding:6px 8px}
+textarea{font:11px/1.55 var(--mono);min-height:240px;resize:vertical}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.preset{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 8px;border:1px solid var(--line2);border-radius:4px;background:transparent;text-align:left;font-size:12px}
+.preset span{font-family:var(--mono);color:var(--muted);width:12px;text-align:center}
+.preset:hover{border-color:var(--muted)}
+.preset.selected{border-color:var(--accent);color:var(--accent)}
+.preset.selected span{color:var(--accent)}
+.rows{display:grid;gap:4px}
+.behavior{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;cursor:pointer}
+.behavior .glyph{font-family:var(--mono);color:var(--muted);width:14px;text-align:center}
+.behavior .copy{flex:1;min-width:0;font-size:12px}
+.behavior small{color:var(--muted);font-size:11px;margin-left:6px}
+.switch{position:relative;display:inline-flex;flex:none}
+.switch input{position:absolute;opacity:0;inset:0;margin:0}
+.switch .track{width:28px;height:14px;border-radius:8px;background:var(--line2);position:relative;transition:.15s}
+.switch .track:after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--muted);transition:.15s}
+.switch input:checked+.track{background:#3b5a22}
+.switch input:checked+.track:after{transform:translateX(14px);background:var(--accent)}
+.switch input:focus-visible+.track{outline:1px solid var(--accent);outline-offset:2px}
+.module-order{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 2px}
+.module-chip{display:inline-flex;align-items:center;gap:2px;font:11px var(--mono);border:1px solid var(--line2);border-radius:4px;padding:2px 2px 2px 7px;cursor:grab}
+.module-chip button{border:0;background:transparent;color:var(--muted);padding:0 4px}
+.module-chip button:hover:not(:disabled){color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.field label,.range-label{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.range-label output{color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 0}
+.rules{font:11px var(--mono);color:var(--muted);border-top:1px dashed var(--line2);margin-top:12px;padding-top:9px}
+.rules b{color:var(--text);font-weight:500}
+details.sub{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+details.sub>summary,details.panel>summary{cursor:pointer;font:600 11px var(--mono);color:var(--muted);letter-spacing:.08em;list-style:none}
+details.sub>summary::before,details.panel>summary::before{content:"+ ";color:var(--dim)}
+details[open].sub>summary::before,details[open].panel>summary::before{content:"− "}
+details.sub>summary::-webkit-details-marker,details.panel>summary::-webkit-details-marker{display:none}
+details.sub[open]>summary,details.panel[open]>summary{color:var(--text)}
+.sub-body{display:grid;gap:8px;margin-top:10px}
+.actions{display:flex;gap:6px;margin-top:12px}
+.actions .btn{flex:1;padding:8px}
+.message{min-height:16px;margin:6px 0 0;font:11px var(--mono);color:var(--muted)}
+.message.error{color:var(--warn)}
+.inline{display:flex;gap:6px}
+.inline select,.inline input{flex:1;min-width:0}
+pre{font:10px/1.5 var(--mono);color:var(--muted);background:var(--panel2);padding:8px;border-radius:4px;white-space:pre-wrap;overflow:auto;margin:0}
+/* world */
+.world-frame{position:relative;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#040606;aspect-ratio:1/1;max-height:calc(100vh - 210px);margin:auto;width:100%}
+.world-frame canvas{width:100%;height:100%;display:block;object-fit:fill;cursor:grab}
+.world-frame canvas:active{cursor:grabbing}
+.world-empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font:12px var(--mono);color:var(--muted);pointer-events:none}
+.world-empty .empty-icon{display:none}
+.world-empty strong{color:var(--text);font-weight:500}
+.world-empty p{margin:4px 0 0}
+.toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.toolbar button,.toolbar select{font:11px var(--mono);background:transparent;border:1px solid var(--line2);border-radius:4px;padding:3px 8px;width:auto}
+.toolbar button:hover{border-color:var(--accent)}
+.toolbar output{font:11px var(--mono);color:var(--muted);min-width:24px;text-align:center}
+.toolbar .sep{width:1px;height:16px;background:var(--line2);margin:0 4px}
+.toolbar button[aria-pressed=true]{color:var(--accent);border-color:#3b5a22}
+.strip{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:9px;font:11px var(--mono);color:var(--muted)}
+.strip strong{color:var(--text);font-weight:500;margin-left:6px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;font:10px var(--mono);color:var(--dim)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.below{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px}
+.players{display:grid;gap:2px}
+.player{display:flex;justify-content:space-between;font:12px var(--mono);padding:3px 0;border-bottom:1px dashed var(--line)}
+.player span:last-child{color:var(--muted)}
+.player .swatch{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+.empty-text{font:11px var(--mono);color:var(--dim);margin:2px 0}
+.chat-log{height:150px;overflow-y:auto;list-style:none;margin:0 0 8px;padding:0;font-size:12px}
+.chat-line{padding:2px 0;overflow-wrap:anywhere}
+.chat-line time{font:10px var(--mono);color:var(--dim);margin-right:6px}
+.chat-line strong{margin-right:5px;font-weight:600}
+.chat-empty{font:11px var(--mono);color:var(--dim)}
+.chat-compose{display:flex;gap:6px}
+.chat-compose input{min-width:0;flex:1}
+.chat-note{min-height:14px;margin:5px 0 0;font:10px var(--mono);color:var(--dim)}
+.chat-note.error{color:var(--warn)}
+.preview-line{display:flex;gap:18px;margin-top:10px;font:11px var(--mono);color:var(--muted)}
+.preview-line strong{color:var(--text);font-weight:500;margin-left:6px}
+.chart-wrap{height:64px;margin-top:8px;border-bottom:1px solid var(--line)}
+.chart-wrap canvas{width:100%;height:100%}
+.organism-tooltip{position:fixed;z-index:100;background:var(--panel);color:var(--text);border:1px solid var(--line2);border-radius:4px;padding:8px 10px;font:11px/1.6 var(--mono);white-space:pre;pointer-events:none}
+@media(max-width:1000px){main{grid-template-columns:1fr}.world-frame{max-height:none}main>.col:last-child{order:-1}}
+@media(max-width:600px){.top{padding:0 12px}.brand .navnote,#worldBadge{display:none}main{padding:10px 12px 30px}.chips{grid-template-columns:repeat(2,1fr)}.below,.grid2{grid-template-columns:1fr}}
+
+/* Shared living-world visual language. */
+:root{--bg:#07100f;--panel:#0d1a18;--panel2:#142521;--line:#213b33;--line2:#355247;--text:#edf6ef;--muted:#a1b9ab;--dim:#789287;--accent:#c5f28c;--accent-ink:#142315}
+body{background:radial-gradient(ellipse at 75% -10%,#183d2b 0,transparent 42%),#07100f;font-size:13px}
+.top{height:55px;background:#091612ed;border-color:#284037;box-shadow:0 8px 24px #0003}
+.brand{letter-spacing:.1em}.brand b{font-size:14px;text-shadow:0 0 18px #a4ee7255}.brand .navnote{color:#a1b9ab}
+main{grid-template-columns:380px minmax(0,1fr);gap:16px;padding:16px 22px 44px}.col{gap:14px}
+.panel > .sub-body > .head .label{display:none}
+.panel{background:linear-gradient(145deg,#10221c,#0b1715);border-color:#29453a;border-radius:12px;padding:16px;box-shadow:0 12px 32px #0003}
+.label{color:#b2cdbb;letter-spacing:.06em}.label::before{color:#7fbd79}.head{margin-bottom:12px}
+.btn,.preset,.behavior,.toolbar button,.toolbar select,select,input[type=text],input[type=url],input[type=number],textarea{border-color:#355346;border-radius:7px}
+.btn,.toolbar button,.preset{transition:border-color .18s,background-color .18s,box-shadow .18s}
+.btn:hover,.toolbar button:hover,.preset:hover{background:#1d3c2e;border-color:#a6dc88}.btn.primary{box-shadow:0 5px 18px #b2ed6c25}
+.preset.selected{background:#203d2c;box-shadow:inset 0 0 0 1px #c5f28c33}.behavior{background:#10201b}.behavior small{color:#9eb9a8}
+.statuspill,.top summary{border-color:#395a48;border-radius:7px;background:#13251c;color:#c8ddc8}
+.world-frame{border-color:#315040;border-radius:10px;background:#081511;box-shadow:inset 0 0 32px #0009}
+.strip{padding:10px 1px 1px;color:#a7c1af}.strip strong{font-size:12px;color:#ecfae9}.legend{color:#a1bbab;line-height:1.8}
+.chat-log{background:#0a1814;border:1px solid #233d32;border-radius:8px;padding:8px}.chat-compose input{background:#10241c}
+.organism-tooltip{border:1px solid #77a778;background:#0c2119f2;box-shadow:0 12px 30px #0008;border-radius:9px;padding:11px 13px;color:#e9f8e9}
+@media(max-width:1000px){main{grid-template-columns:1fr}.world-frame{max-height:none}main>.col:last-child{order:-1}}
+@media(max-width:600px){main{padding:10px 12px 30px}.panel{padding:13px}.chips{grid-template-columns:repeat(2,1fr)}.below,.grid2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>CELLGAME</b><span class="navnote">生命实验室<span id="appVersion"></span></span></div>
+  <div class="top-right">
+    <span id="worldBadge" class="statuspill" title="当前世界与感知方式" hidden></span>
+    <span id="conn" class="statuspill" role="status"><i class="dot"></i><span id="connText">检查连接</span></span>
+    <details><summary>连接与资料 ▾</summary><div class="connect-pop">
+      <label for="srvUrl">server</label><input type="text" id="srvUrl" value="ws://localhost:8765">
+      <label for="pname">name</label><input type="text" id="pname" value="player1" maxlength="24" oninput="profileDirty=true">
+      <label for="pcolor">color</label><div class="profile-row"><input type="color" id="pcolor" value="#f4b66a" oninput="profileDirty=true"><button class="btn" id="profileBtn" onclick="saveProfile()">保存资料</button></div>
+      <p id="profileMessage" role="status"></p>
+      <div class="connect-actions"><button class="btn primary" id="connectBtn" onclick="doConnect()">连接</button><button class="btn ghost" onclick="doDisconnect()">断开</button></div>
+      <p id="connectionError" role="status"></p>
+    </div></details>
+  </div>
+</header>
+<main>
+<div class="col">
+  <details class="panel" open><summary>物种原型</summary><div class="sub-body">
+    <div class="head"><span class="label">物种原型</span><span class="meta accent" id="presetLabel">均衡型</span></div>
+    <div class="chips" id="presets">
+      <button class="preset selected" data-preset="balanced" aria-pressed="true" title="觅食、生长与探索" onclick="choosePreset('balanced')"><span>◈</span>均衡型</button>
+      <button class="preset" data-preset="forager" aria-pressed="false" title="更谨慎地积累能量" onclick="choosePreset('forager')"><span>✳</span>觅食者</button>
+      <button class="preset" data-preset="hunter" aria-pressed="false" title="优先攻击较弱对手" onclick="choosePreset('hunter')"><span>⌁</span>捕食者</button>
+      <button class="preset" data-preset="guardian" aria-pressed="false" title="原地生长，遇敌防御" onclick="choosePreset('guardian')"><span>⬡</span>守护者</button>
+      <button class="preset" data-preset="spider" aria-pressed="false" title="连接生长，整体移动" onclick="choosePreset('spider')"><span>✺</span>蜘蛛</button>
+      <button class="preset" data-preset="cross" aria-pressed="false" title="向四个方向伸展" onclick="choosePreset('cross')"><span>✚</span>十字</button>
+      <button class="preset" data-preset="swarm" aria-pressed="false" title="共享食物方向线索" onclick="choosePreset('swarm')"><span>⁘</span>群体</button>
+    </div>
+  </div></details>
+
+  <details class="panel" open id="behaviorPanel"><summary>行为组合</summary><div class="sub-body">
+    <div class="head"><span class="label">行为组合</span><span class="meta" id="priorityDescription"></span></div>
+    <div class="rows" id="modules">
+      <label class="behavior"><span class="glyph">✳</span><span class="copy">进食<small>吃脚下的食物</small></span><span class="switch"><input id="b-eat" type="checkbox" checked onchange="markCustom()"><span class="track"></span></span></label>
+      <label class="behavior"><span class="glyph">✣</span><span class="copy">繁殖<small>能量够时分裂</small></span><span class="switch"><input id="b-reproduce" type="checkbox" checked onchange="markCustom()"><span class="track"></span></span></label>
+      <label class="behavior"><span class="glyph">⌁</span><span class="copy">攻击<small>只打得过的邻居</small></span><span class="switch"><input id="b-attack" type="checkbox" onchange="markCustom()"><span class="track"></span></span></label>
+      <label class="behavior"><span class="glyph">⬡</span><span class="copy">防御<small>遇敌变装甲</small></span><span class="switch"><input id="b-defend" type="checkbox" onchange="markCustom()"><span class="track"></span></span></label>
+      <label class="behavior"><span class="glyph">↗</span><span class="copy">移动<small>走向空位</small></span><span class="switch"><input id="b-move" type="checkbox" checked onchange="markCustom()"><span class="track"></span></span></label>
+    </div>
+    <div id="moduleOrder" class="module-order" aria-label="行为优先顺序（从左到右）"></div>
+    <div class="grid2">
+      <div class="field"><label for="movement">移动偏好</label><select id="movement" onchange="markCustom()"><option value="food">寻找食物</option><option value="wander">自由巡游</option></select></div>
+      <div class="field" hidden><label for="priority">priority</label><select id="priority" onchange="priorityChanged()"><option value="eat">进食</option><option value="reproduce">繁殖</option><option value="attack">攻击</option><option value="defend">防御</option><option value="move">移动</option></select></div>
+    </div>
+    <div class="grid2">
+      <div><div class="range-label"><label for="reproduceAt" title="物种自己的选择：能量达到多少时尝试繁殖。不会低于世界规则的下限。">繁殖能量 ≥</label><output id="reproduceValue">13</output></div><input id="reproduceAt" type="range" min="10" max="30" value="13" oninput="rangeChanged()"></div>
+      <div><div class="range-label"><label for="eatBelow">进食能量 &lt;</label><output id="eatValue">20</output></div><input id="eatBelow" type="range" min="5" max="40" value="20" oninput="rangeChanged()"></div>
+    </div>
+    <div class="rules" id="worldRules" title="由服务器的世界规则决定，物种设置无法改变">world rules · 连接后显示</div>
+
+    <details class="sub"><summary>形态与连接</summary><div class="sub-body">
+      <div class="grid2" style="margin-top:0">
+        <div class="field"><label for="formation">form</label><select id="formation" onchange="formationChanged()"><option value="free">自由生长</option><option value="spider">蜘蛛</option><option value="cross">十字</option></select></div>
+        <label class="behavior" style="align-self:end"><span class="copy">共享线索</span><span class="switch"><input id="collective" type="checkbox" onchange="markCustom()"><span class="track"></span></span></label>
+      </div>
+      <label class="behavior" title="只连接父细胞和新生细胞"><span class="copy">出生时连接</span><span class="switch"><input id="bondNewborn" type="checkbox" onchange="connectChanged('bond')"><span class="track"></span></span></label>
+      <label class="behavior" title="接触的不同细胞团也可能连在一起"><span class="copy">连接相邻的自己人</span><span class="switch"><input id="bondNeighbors" type="checkbox" onchange="connectChanged('bond')"><span class="track"></span></span></label>
+      <label class="behavior" title="开启移动时，相连的细胞一起移动"><span class="copy">整体移动</span><span class="switch"><input id="groupMove" type="checkbox" onchange="markCustom()"><span class="track"></span></span></label>
+      <label class="behavior" title="逐个断开后，细胞可以再次单独移动"><span class="copy">断开已有连接</span><span class="switch"><input id="releaseBonds" type="checkbox" onchange="connectChanged('release')"><span class="track"></span></span></label>
+      <label class="behavior"><span class="copy">分享能量</span><span class="switch"><input id="shareEnergy" type="checkbox" onchange="markCustom()"><span class="track"></span></span></label>
+      <div class="grid2" style="margin-top:0">
+        <div class="field"><label for="shareBelow">share if &lt;</label><input id="shareBelow" type="number" min="2" max="30" value="6" onchange="markCustom()"></div>
+        <div class="field"><label for="shareAmount">amount</label><input id="shareAmount" type="number" min="1" max="20" value="3" onchange="markCustom()"></div>
+      </div>
+    </div></details>
+
+    <div class="actions"><button id="previewBtn" class="btn" onclick="previewConfig()">预览</button><button id="applyBtn" class="btn primary" onclick="applyConfig()">应用 ▸</button></div>
+    <p class="message" id="actionMessage" aria-live="polite"></p>
+  </div></details>
+
+  <details class="panel"><summary>代码与本地模型</summary><div class="sub-body">
+    <div class="inline"><select id="exampleSel" aria-label="规则示例"><option value="beginner">简单示例</option><option value="cooperative">连接与分享</option><option value="entity_example">有机体规则</option><option value="unity_example">群体规则</option><option value="grazer">觅食</option><option value="hunter">捕食</option><option value="wall">防御</option><option value="swarm">群体（新）</option><option value="blob">连接体（新）</option><option value="sensing_forager">感知觅食（新）</option><option value="stalker">主动捕食者（新）</option></select><button class="btn" onclick="loadExample()">载入</button></div>
+    <label for="generatedCode" class="label">当前组合对应的代码 · 自动更新</label>
+    <textarea id="generatedCode" spellcheck="false" aria-describedby="generatedStatus" oninput="generatedEdited()"></textarea>
+    <p class="message" id="generatedStatus" role="status"></p>
+    <div class="inline"><button class="btn" type="button" onclick="previewGenerated()">预览这段代码</button><button class="btn primary" type="button" onclick="applyGenerated()">启用这段代码</button></div>
+    <div class="inline"><button class="btn" type="button" onclick="copyGenerated()">复制到自定义编辑器</button><button class="btn" type="button" id="restoreGenerated" hidden onclick="restoreGeneratedDraft()">恢复上次编辑</button></div>
+    <label for="editor" class="label">自定义代码 · 不随组合覆盖</label><textarea id="editor" spellcheck="false"></textarea>
+    <div class="inline"><button class="btn" onclick="previewCode()">预览代码</button><button class="btn primary" onclick="applyCode()">启用代码</button><a href="/guide" target="_blank" rel="noopener" class="meta" style="align-self:center;margin-left:auto">入门 ↗</a></div>
+    <label for="serviceUrl" class="label">model service</label>
+    <div class="inline"><input id="serviceUrl" type="url" value="http://127.0.0.1:9000/decide"><button class="btn" onclick="applyService()">启用</button></div>
+    <p id="serviceStatus" class="message" role="status"></p>
+    <pre>POST {version, tick, cells, neighborhood, env, constraints, observation?}
+→ {"tick": 3, "actions": [[x, y, tx, ty, action, 0, param]]}
+示例服务：python -m cellgame.examples.local_agent_service</pre>
+    <p class="message" id="advancedMessage" aria-live="polite"></p>
+  </div></details>
+</div>
+
+<div class="col">
+  <section class="panel">
+    <div class="head"><span class="label">生命世界</span>
+      <div class="toolbar">
+        <button onclick="mapView.setZoom(mapView.zoom/2)" aria-label="缩小地图">−</button><output id="zoomLabel">1×</output><button onclick="mapView.setZoom(mapView.zoom*2)" aria-label="放大地图">+</button><button onclick="mapView.reset()" title="重置视图">⟲</button>
+        <button onclick="focusMyCells()" title="定位到离当前视野最近的自己的细胞">定位我的细胞</button><span class="sep"></span>
+        <button id="effectsBtn" type="button" aria-pressed="true" onclick="toggleEffects()" title="开启或关闭呼吸与事件动画">fx</button>
+        <select id="boundaryMode" onchange="setBoundaryMode()" aria-label="边界显示"><option value="entity">entity</option><option value="unity">unity</option><option value="off">no outline</option></select>
+        <span class="sep"></span><span class="meta" id="liveTag">offline</span>
+      </div>
+    </div>
+    <div class="world-frame"><canvas id="world" width="900" height="900" tabindex="0" aria-label="世界地图：滚轮或加减键缩放，拖动或方向键移动，悬停查看个体"></canvas><div id="worldEmpty" class="world-empty"><span class="empty-icon"></span><strong>等待世界苏醒</strong><p>在右上角连接服务器</p></div></div>
+    <div class="strip"><span>tick<strong id="tick">—</strong></span><span>cells<strong id="ownCells">—</strong></span><span>energy<strong id="ownEnergy">—</strong></span><span id="controllerType">ctrl —</span></div>
+    <div class="legend"><span><i style="background:#2f9e5c"></i>食物</span><span><i style="background:#db719c"></i>浆果 +2</span><span><i style="background:#dc4d18"></i>熔岩 −5/步</span><span><i style="background:#a96aba"></i>尖刺 −2/步</span><span><i style="background:#e7b073"></i>细胞（颜色=玩家）</span><span><i style="background:transparent;border:1px solid #f7f5c2"></i>个体边界</span><span><i style="background:transparent;border:1px solid #fff"></i>装甲</span><span><i style="background:#38583a"></i>草地</span><span><i style="background:#216442"></i>森林</span><span><i style="background:#806934"></i>沙漠</span><span><i style="background:#547482"></i>冻原</span><span id="knownLegend" hidden>暗=以前见过 · 黑=未感知</span></div>
+  </section>
+
+  <div class="below">
+    <section class="panel"><div class="head"><span class="label">在线物种</span></div><div class="players" id="plist"><p class="empty-text">—</p></div></section>
+    <section class="panel"><div class="head"><span class="label">世界公屏</span></div>
+      <ol id="chatLog" class="chat-log" aria-label="世界公屏消息" aria-live="polite"><li class="chat-empty">—</li></ol>
+      <form class="chat-compose" onsubmit="sendChat(event)"><input id="chatInput" type="text" maxlength="200" placeholder="message…" aria-label="输入公屏消息" autocomplete="off" oninput="clearChatFeedback()" disabled><button id="chatSend" class="btn primary" type="submit" disabled>发送</button></form>
+      <p id="chatStatus" class="chat-note" role="status"></p>
+    </section>
+  </div>
+
+  <details class="panel"><summary>本地预览</summary>
+    <p class="hint" id="previewHint">本地 32×32 模拟，不影响当前世界。</p>
+    <div class="preview-line"><span>cells<strong id="previewCells">—</strong></span><span>births<strong id="previewBirths">—</strong></span><span>deaths<strong id="previewDeaths">—</strong></span></div>
+    <div class="chart-wrap"><canvas id="chart" width="600" height="110" aria-label="预览中的细胞数量变化"></canvas></div>
+    <p class="message" id="previewOut" role="status"></p>
+  </details>
+  <details class="panel"><summary>运行信息</summary>
+    <div class="strip" style="margin-top:8px"><span>sense<strong id="sense">—</strong></span><span>exec<strong id="execMs">—</strong></span></div>
+    <p id="execError" class="message error"></p>
+    <pre id="log" style="max-height:160px"></pre>
+  </details>
+</div>
+</main>
+<div id="organismTooltip" class="organism-tooltip" role="tooltip" hidden></div>
+<script src="/world-view.js"></script>
+<script>
+const ids=['eat','reproduce','attack','defend','move'];
+const labels={balanced:'均衡型',forager:'觅食者',hunter:'捕食者',guardian:'守护者',spider:'蜘蛛',cross:'十字',swarm:'群体'};
+const orders={eat:['eat','reproduce','attack','defend','move'],reproduce:['reproduce','eat','attack','defend','move'],attack:['attack','eat','reproduce','defend','move'],defend:['defend','eat','reproduce','attack','move'],move:['move','eat','reproduce','attack','defend']};
+const behaviorNames={eat:'进食',reproduce:'繁殖',attack:'攻击',defend:'防御',move:'移动'};
+let moduleOrder=['eat','reproduce','attack','defend','move'];
+let worldBreedMin=0,presets={},initialStateLoaded=false,profileDirty=false,profileWaiting=false,knownPlayerId=null,lastVisualSeq=null,chatWaiting=false,chatAccepted=false,chatDraft="",chatDraftSession=null,chatRequestId=null,chatSignature="",chatFeedback="",chatFeedbackError=false;
+const mapView = new CellWorldView.WorldView(document.getElementById('world'), document.getElementById('zoomLabel'), {effectsEnabled:true});
+CellWorldView.attachOrganismTooltip(mapView, document.getElementById('organismTooltip'));
+function syncEffectsButton(){const button=document.getElementById('effectsBtn');button.textContent='动态 '+(mapView.effectsEnabled?'开':'关');button.setAttribute('aria-pressed',String(mapView.effectsEnabled))}
+function focusMyCells(){
+  const d=mapView.data;if(!d||!d.myPlayer)return;
+  let best=-1,dist=Infinity;
+  for(let i=0;i<d.owners.length;i++){
+    if(d.owners[i]!==d.myPlayer || (d.seen && d.seen[i]!==1))continue;
+    const x=i%d.width,y=Math.floor(i/d.width),value=(x-mapView.centerX)**2+(y-mapView.centerY)**2;
+    if(value<dist){best=i;dist=value}
+  }
+  if(best<0)return;
+  mapView.centerX=best%d.width+.5;mapView.centerY=Math.floor(best/d.width)+.5;
+  mapView.setZoom(Math.max(4,mapView.zoom));
+}
+function setBoundaryMode(){mapView.setBoundaryMode($('boundaryMode').value)}
+function toggleEffects(){mapView.setEffectsEnabled(!mapView.effectsEnabled);syncEffectsButton()}
+syncEffectsButton();
+const $=id=>document.getElementById(id);
+function setMessage(id,text,error=false){const el=$(id);el.textContent=text;el.classList.toggle('error',error)}
+async function api(path,body){const opts=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};const r=await fetch(path,opts);if(!r.ok)throw new Error('服务暂不可用 ('+r.status+')');return r.json()}
+function formationChanged(){if($('formation').value!=='free'){$('bondNewborn').checked=true;$('releaseBonds').checked=false}markCustom()}
+function connectChanged(mode){if(mode==='release'&&$('releaseBonds').checked){$('bondNewborn').checked=false;$('bondNeighbors').checked=false}else if(mode==='bond'&&($('bondNewborn').checked||$('bondNeighbors').checked))$('releaseBonds').checked=false;markCustom()}
+function markCustom(){scheduleGenerated();document.querySelectorAll('.preset').forEach(el=>{el.classList.remove('selected');el.setAttribute('aria-pressed','false')});$('presetLabel').textContent='自定义组合'}
+function renderModuleOrder(){const box=$('moduleOrder');box.replaceChildren();moduleOrder.forEach((id,index)=>{const chip=document.createElement('span');chip.className='module-chip';chip.draggable=true;chip.title='拖动调整顺序';chip.textContent=behaviorNames[id];chip.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',id));chip.addEventListener('dragover',e=>e.preventDefault());chip.addEventListener('drop',e=>{e.preventDefault();const moving=e.dataTransfer.getData('text/plain');if(!moduleOrder.includes(moving)||moving===id)return;moduleOrder.splice(moduleOrder.indexOf(moving),1);moduleOrder.splice(moduleOrder.indexOf(id),0,moving);renderModuleOrder();markCustom()});for(const [label,delta] of [['↑',-1],['↓',1]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-label',label==='↑'?'提高'+behaviorNames[id]+'优先级':'降低'+behaviorNames[id]+'优先级');b.disabled=index+delta<0||index+delta>=moduleOrder.length;b.onclick=()=>{const j=index+delta;[moduleOrder[index],moduleOrder[j]]=[moduleOrder[j],moduleOrder[index]];renderModuleOrder();markCustom()};chip.append(b)}box.append(chip)});$('priorityDescription').textContent='从左到右依次尝试'}
+function updatePriorityDescription(){renderModuleOrder()}
+function priorityChanged(){moduleOrder=[...orders[$('priority').value]];updatePriorityDescription();markCustom()}
+function showReproduce(){const v=Number($('reproduceAt').value);$('reproduceValue').textContent=worldBreedMin>v?v+' → '+worldBreedMin:String(v);$('reproduceValue').title=worldBreedMin>v?'低于世界规则下限，实际按 '+worldBreedMin+' 繁殖':''}
+function rangeChanged(){showReproduce();$('eatValue').textContent=$('eatBelow').value;markCustom()}
+function setConfig(c){moduleOrder=[...c.order];ids.forEach(id=>$('b-'+id).checked=c.enabled[id]);$('priority').value=c.order[0];$('movement').value=c.move_style;$('reproduceAt').value=c.reproduce_at;$('eatBelow').value=c.eat_below;showReproduce();$('eatValue').textContent=c.eat_below;$('bondNewborn').checked=!!c.bond_newborn;$('bondNeighbors').checked=!!c.bond_neighbors;$('releaseBonds').checked=!!c.release_bonds;$('groupMove').checked=!!c.group_move;$('shareEnergy').checked=!!c.share_energy;$('shareBelow').value=c.share_below??6;$('shareAmount').value=c.share_amount??3;$('formation').value=c.formation||'free';$('collective').checked=!!c.collective;updatePriorityDescription();scheduleGenerated()}
+function config(){const enabled={};ids.forEach(id=>enabled[id]=$('b-'+id).checked);return {enabled,order:[...moduleOrder],eat_below:Number($('eatBelow').value),reproduce_at:Number($('reproduceAt').value),move_above:4,move_style:$('movement').value,bond_newborn:$('bondNewborn').checked,bond_neighbors:$('bondNeighbors').checked,release_bonds:$('releaseBonds').checked,group_move:$('groupMove').checked,share_energy:$('shareEnergy').checked,share_below:Number($('shareBelow').value),share_amount:Number($('shareAmount').value),formation:$('formation').value,collective:$('collective').checked} }
+let generatedTimer=null,generatedRevision=0,generatedDirty=false,generatedDraft=null;
+function generatedEdited(){generatedDirty=true;generatedRevision++;clearTimeout(generatedTimer);$('generatedStatus').textContent='代码已编辑，可能与组合设置不同。'}
+function scheduleGenerated(){if(generatedDirty){generatedDraft=$('generatedCode').value;generatedDirty=false;$('restoreGenerated').hidden=false}const revision=++generatedRevision;clearTimeout(generatedTimer);$('generatedStatus').textContent='正在生成…';generatedTimer=setTimeout(async()=>{try{const r=await api('/api/compose/source',{config:config()});if(revision!==generatedRevision)return;if(!r.ok)throw new Error(r.error);$('generatedCode').value=r.source;$('generatedStatus').textContent=generatedDraft===null?'与当前组合一致，可直接编辑。':'组合已更新；可恢复上次编辑。'}catch(e){if(revision===generatedRevision){$('generatedCode').value='';$('generatedStatus').textContent='当前组合无效：'+e.message}}},180)}
+function restoreGeneratedDraft(){if(generatedDraft===null)return;$('generatedCode').value=generatedDraft;generatedDirty=true;generatedDraft=null;$('restoreGenerated').hidden=true;$('generatedStatus').textContent='已恢复编辑内容；当前代码可能与组合设置不同。'}
+async function previewGenerated(){setMessage('advancedMessage','正在预览代码…');await preview({source:$('generatedCode').value,ticks:200},'advancedMessage')}
+async function applyGenerated(){try{const r=await api('/api/rules',{source:$('generatedCode').value});if(!r.ok)throw new Error(r.error);setMessage('advancedMessage','代码已启用，会从下一次决策开始生效。');await refresh()}catch(e){setMessage('advancedMessage','代码加载失败：'+e.message,true)}}
+function copyGenerated(){if(!$('generatedCode').value)return;if($('editor').value&&$('editor').value!==$('generatedCode').value&&!window.confirm('复制会覆盖自定义编辑器中的内容，是否继续？'))return;$('editor').value=$('generatedCode').value;setMessage('advancedMessage','已复制；可编辑后预览和启用。')}
+function choosePreset(name){if(!presets[name]){setMessage('actionMessage','正在载入原型，请稍后再试。',true);return}setConfig(presets[name]);document.querySelectorAll('.preset').forEach(el=>{const yes=el.dataset.preset===name;el.classList.toggle('selected',yes);el.setAttribute('aria-pressed',String(yes))});$('presetLabel').textContent=labels[name];setMessage('actionMessage','已选择'+labels[name]+'；可以调整行为并预览。')}
+async function loadPresets(){try{const r=await api('/api/presets');presets=r.presets}catch(e){setMessage('actionMessage','无法载入物种原型，请检查客户端是否正在运行。',true)}}
+function setBusy(id,busy,text){const b=$(id);if(!b.dataset.label)b.dataset.label=b.textContent;b.disabled=busy;b.textContent=busy?text:b.dataset.label}
+async function previewConfig(){setBusy('previewBtn',true,'预览中…');setMessage('actionMessage','正在模拟 200 个时刻…');await preview({config:config(),ticks:200});setBusy('previewBtn',false)}
+async function previewCode(){setMessage('advancedMessage','正在预览代码…');await preview({source:$('editor').value,ticks:200},'advancedMessage')}
+async function preview(body,messageId='actionMessage'){try{const r=await api('/api/preview',body);if(!r.ok)throw new Error(r.error);$('previewCells').closest('details').open=true;$('previewCells').textContent=r.final_cells;$('previewBirths').textContent=r.births;$('previewDeaths').textContent=r.deaths;$('previewOut').textContent='经过 '+r.ticks+' 个时刻 · 最高 '+Math.max(...r.population)+' 个细胞 · 进食 '+r.eats+' 次';$('previewHint').textContent='本地模拟使用默认世界规则，实际世界可能不同。';drawChart(r.population);setMessage(messageId,'预览完成。')}catch(e){setMessage(messageId,'预览失败：'+e.message,true)}}
+function drawChart(values){const c=$('chart'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(!values.length)return;const max=Math.max(1,...values);ctx.beginPath();values.forEach((v,i)=>{const x=i/(values.length-1||1)*c.width,y=c.height-8-v/max*(c.height-20);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.strokeStyle='#c1e78d';ctx.lineWidth=3;ctx.stroke()}
+async function applyConfig(){setBusy('applyBtn',true,'正在应用…');try{const r=await api('/api/compose/apply',{config:config()});if(!r.ok)throw new Error(r.error);setMessage('actionMessage','组合物种已启用，会从下一次决策开始生效。');await refresh()}catch(e){setMessage('actionMessage','应用失败：'+e.message,true)}finally{setBusy('applyBtn',false)}}
+async function loadExample(){try{const r=await api('/api/species?name='+encodeURIComponent($('exampleSel').value));$('editor').value=r.source;setMessage('advancedMessage','示例已载入编辑器。')}catch(e){setMessage('advancedMessage','载入失败：'+e.message,true)}}
+async function applyCode(){try{const r=await api('/api/rules',{source:$('editor').value});if(!r.ok)throw new Error(r.error);setMessage('advancedMessage','代码已启用，会从下一次决策开始生效。');await refresh()}catch(e){setMessage('advancedMessage','代码加载失败：'+e.message,true)}}
+async function applyService(){try{const r=await api('/api/service/apply',{url:$('serviceUrl').value.trim()});if(!r.ok)throw new Error(r.error);setMessage('advancedMessage','模型控制已启用；连接世界后等待服务响应。');await refresh()}catch(e){setMessage('advancedMessage','无法启用：'+e.message,true)}}
+async function saveProfile(){try{$('profileBtn').disabled=true;const r=await api('/api/profile',{name:$('pname').value.trim(),color:$('pcolor').value});if(!r.ok)throw new Error(r.error);profileWaiting=!!r.pending;profileDirty=false;$('profileMessage').textContent=r.pending?'等待服务器确认…':'已保存，连接时生效。';await refresh()}catch(e){$('profileMessage').textContent='保存失败：'+e.message}finally{if(!profileWaiting)$('profileBtn').disabled=false}}
+async function doConnect(){let url=$('srvUrl').value.trim();if(!/^wss?:\/\//i.test(url))url='ws://'+url;try{const profile=await api('/api/profile',{name:$('pname').value.trim(),color:$('pcolor').value});if(!profile.ok)throw new Error(profile.error);profileDirty=false;const r=await api('/api/connect',{url,name:$('pname').value.trim()});if(!r.ok)throw new Error(r.error);$('connectionError').textContent='正在连接…';await refresh()}catch(e){$('connectionError').textContent='连接失败：'+e.message}}
+async function doDisconnect(){try{await api('/api/disconnect',{});$('connectionError').textContent='正在断开…'}catch(e){$('connectionError').textContent=e.message}}
+function drawWorld(s){const w=s.world_w||256,h=s.world_h||256;if(!s.owner_b64)return;const owners=CellWorldView.intArrayFromBase64(s.owner_b64,4),types=CellWorldView.intArrayFromBase64(s.type_b64,2),bonds=s.bonds_b64?CellWorldView.bytesFromBase64(s.bonds_b64):null,organisms=s.organism_b64?CellWorldView.intArrayFromBase64(s.organism_b64,4):null,food=CellWorldView.bytesFromBase64(s.food_b64),seen=s.seen_b64?CellWorldView.bytesFromBase64(s.seen_b64):null,biomes=s.biome_b64?CellWorldView.bytesFromBase64(s.biome_b64):null,materials=s.material_b64?CellWorldView.bytesFromBase64(s.material_b64):null,colors={'-1':'#6B7280'};for(const p of (s.players||[]))colors[p.player_id]=p.color;let events=[];const seq=Number(s.visual_seq)||0;if(lastVisualSeq!==null&&seq>lastVisualSeq){const batches=(s.visual_events||[]).filter(b=>b.seq>lastVisualSeq);if(batches.length)events=batches[batches.length-1].events||[]}lastVisualSeq=seq;mapView.update({width:w,height:h,owners,types,bonds,organisms,myPlayer:s.player_id,food,foodScale:12,colors,seen,biomes,materials},events)}
+function clearChatFeedback(){chatFeedback='';chatFeedbackError=false}
+async function sendChat(event){event.preventDefault();if(chatWaiting)return;const text=$('chatInput').value.trim();if(!text){chatFeedback='请输入消息。';chatFeedbackError=true;setMessage('chatStatus',chatFeedback,true);return}chatWaiting=true;chatAccepted=false;chatDraft=text;chatDraftSession=lastChatSession;$('chatSend').disabled=true;$('chatInput').disabled=true;setMessage('chatStatus','正在发送…');try{const r=await api('/api/chat',{text});if(!r.ok)throw new Error(r.error);chatRequestId=r.request_id;chatAccepted=true;await refresh()}catch(e){chatWaiting=false;chatAccepted=false;chatFeedback='发送失败：'+e.message;chatFeedbackError=true;setMessage('chatStatus',chatFeedback,true);$('chatInput').disabled=false;$('chatSend').disabled=false}}
+let lastChatSession=null;
+function renderChat(s){const messages=Array.isArray(s.chat_messages)?s.chat_messages:[],session=s.chat_session??0;lastChatSession=session;const signature=session+':'+messages.map(m=>m.id).join(',');if(signature!==chatSignature){const log=$('chatLog'),stick=log.scrollHeight-log.scrollTop-log.clientHeight<35,oldTop=log.scrollTop;log.replaceChildren();if(!messages.length){const empty=document.createElement('li');empty.className='chat-empty';empty.textContent=s.connected?'还没有消息，来说句话吧。':'连接后可以和其他玩家聊天。';log.append(empty)}else for(const m of messages){const li=document.createElement('li');li.className='chat-line';const time=document.createElement('time');const date=new Date(Number(m.timestamp)*1000);time.textContent=Number.isFinite(date.getTime())?date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';const name=document.createElement('strong');name.textContent=String(m.name)+':';if(/^#[0-9a-f]{6}$/i.test(m.color||''))name.style.color=m.color;const text=document.createElement('span');text.textContent=String(m.text);li.append(time,name,text);log.append(li)}if(stick)log.scrollTop=log.scrollHeight;else log.scrollTop=oldTop;chatSignature=signature}
+if(chatWaiting&&chatAccepted){const result=s.chat_last_result,received=messages.some(m=>m.request_id===chatRequestId&&m.player_id===s.player_id);if(received||(result&&result.request_id===chatRequestId)||session!==chatDraftSession){if(received){if($('chatInput').value.trim()===chatDraft)$('chatInput').value='';chatFeedback='消息已发送。';chatFeedbackError=false}else{chatFeedback='发送失败：'+((result&&result.error)||'连接已改变，消息未确认。');chatFeedbackError=true}chatWaiting=false;chatAccepted=false}}
+const available=!!(s.connected&&s.chat_available),busy=chatWaiting||!!s.chat_pending;$('chatInput').disabled=!available||busy;$('chatSend').disabled=!available||busy;const status=chatWaiting?'正在发送…':!s.connected?'连接世界后可发言。':!s.chat_available?'此服务器不支持公屏聊天，请更新服务端。':chatFeedback||'所有在线玩家均可看到；每条最多 200 字。';setMessage('chatStatus',status,!!(chatFeedback&&chatFeedbackError&&!chatWaiting&&available))}
+function renderPlayers(players){const container=$('plist');container.replaceChildren();if(!players.length){const p=document.createElement('p');p.className='empty-text';p.textContent='—';container.append(p);return}for(const p of players){const row=document.createElement('div');row.className='player';const name=document.createElement('span');const swatch=document.createElement('i');swatch.className='swatch';swatch.style.background=p.color||CellWorldView.defaultColor(p.player_id);name.append(swatch,document.createTextNode(String(p.name)));const stats=document.createElement('span');stats.textContent=String(p.cells);row.append(name,stats);container.append(row)}}
+function perceptionLabel(p){if(!p||p.model==='legacy')return'经典 · 全图可见';if(p.model==='radius')return'半径感知 · 半径 '+p.radius;if(p.model==='blanket')return'毯感知 · 外部半径 '+p.external_radius;return p.model}
+function renderWorldRules(s){const r=s.world_rules||{};if(!s.connected||r.reproduce_min_energy===undefined){$('worldRules').textContent='world rules · 连接后显示';worldBreedMin=0}else{worldBreedMin=Math.max(r.reproduce_min_energy,r.reproduce_cost||0);$('worldRules').innerHTML='';const parts=[['breed ≥',worldBreedMin],['cost',r.reproduce_cost],['child',r.child_energy],['move',r.move_cost],['eat +',r.eat_gain]];$('worldRules').append('world · ');parts.forEach(([k,v],i)=>{if(i)$('worldRules').append(' · ');const b=document.createElement('b');b.textContent=v;$('worldRules').append(k+' ',b)});if(r.reproduce_enabled===false)$('worldRules').append(' · 繁殖暂停')}showReproduce()}
+function renderWorldInfo(s){renderWorldRules(s);const badge=$('worldBadge');if(s.connected&&s.perception){badge.textContent=(s.world_name?s.world_name+' · ':'')+perceptionLabel(s.perception);badge.hidden=false}else badge.hidden=true;$('knownLegend').hidden=!s.seen_b64;if(s.client_version)$('appVersion').textContent=' · v'+s.client_version}
+async function refresh(){try{const s=await api('/api/state');renderWorldInfo(s);if(!initialStateLoaded){$('srvUrl').value=s.server_url||$('srvUrl').value;$('pname').value=s.player_name||$('pname').value;if(s.player_color)$('pcolor').value=s.player_color;if(s.controller_endpoint)$('serviceUrl').value=s.controller_endpoint;if(s.composition_config){setConfig(s.composition_config);if(JSON.stringify(s.composition_config)!==JSON.stringify(presets.balanced))markCustom()}updatePriorityDescription();initialStateLoaded=true}
+if(s.player_id&&s.player_id!==knownPlayerId){knownPlayerId=s.player_id;if(!profileDirty){$('pname').value=s.player_name||$('pname').value;if(s.player_color)$('pcolor').value=s.player_color}}if(profileWaiting&&!s.profile_pending){profileWaiting=false;$('profileBtn').disabled=false;if(s.profile_error){$('profileMessage').textContent='保存失败：'+s.profile_error}else{$('profileMessage').textContent=profileDirty?'资料已更新；当前还有未保存的修改。':'昵称与颜色已更新。';if(!profileDirty){$('pname').value=s.player_name;if(s.player_color)$('pcolor').value=s.player_color}}}$('profileBtn').disabled=!!(s.profile_pending||s.connecting);
+$('conn').classList.toggle('online',s.connected);$('connText').textContent=s.connected?'已连接世界':s.connecting?'正在连接':'未连接';$('connectBtn').disabled=!!(s.connected||s.connecting);$('connectionError').textContent=s.connection_error?'连接失败：'+s.connection_error:s.connected?'已连接到 '+s.server_url:'';$('liveTag').textContent=s.connected?'● live':'offline';$('tick').textContent=s.connected?s.tick:'—';$('controllerType').textContent='ctrl '+(s.controller_type||'—');$('sense').textContent=s.last_sense_tick>=0?'t'+s.last_sense_tick+' · '+s.last_sense_cells+' cells':'—';$('execMs').textContent=s.last_exec_ms!=null?s.last_exec_ms.toFixed(0)+' ms':'—';$('execError').textContent=s.last_exec_error||'';$('log').textContent=(s.log||[]).map(([t,m])=>'['+t+'] '+m).join('\n');
+$('serviceStatus').textContent=s.controller_type==='本地模型'?(s.last_exec_error?'服务错误：'+s.last_exec_error:s.last_exec_ms!=null?'最近一次响应：'+s.last_exec_ms.toFixed(0)+' ms':'已启用；等待世界观察数据。'):'';
+renderChat(s);if(!s.connected&&lastVisualSeq!==null){lastVisualSeq=null;mapView.clearEffects()}const mine=(s.players||[]).find(p=>p.player_id===s.player_id);$('ownCells').textContent=s.connected?(mine?mine.cells:0):'—';$('ownEnergy').textContent=s.connected?(mine?mine.energy:0):'—';$('worldEmpty').hidden=!!(s.connected&&s.view_b64);if(s.connected&&s.view_b64)drawWorld(s);renderPlayers(s.connected?s.players||[]:[])
+}catch(e){$('conn').classList.remove('online');$('connText').textContent='客户端未响应'}}
+async function init(){await loadPresets();try{const r=await api('/api/rules');$('editor').value=r.source||''}catch(e){}await refresh();scheduleGenerated();setInterval(refresh,1200)}
+init();
+</script>
+</body>
+</html>

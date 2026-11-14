@@ -1,0 +1,61 @@
+﻿CellGame 0.2.0 试玩说明
+
+一、准备
+
+1. 解压整个 ZIP，不要直接在压缩包内运行。
+2. 安装 Python 3.10 或更高版本。Windows 安装时请勾选“Add Python to PATH”。
+3. 第一次运行时程序会在游戏目录创建 venv，并通过 pip 安装 NumPy 和 websockets，因此需要联网；安装过程可能需要几分钟。
+
+二、在同一台 Windows 电脑上体验
+
+1. 双击 Start-Server.bat，等待服务器启动，不要关闭命令窗口。服务器观察界面为 http://localhost:8080/ 。
+2. 服务器启动后双击 Start-Client.bat，不要关闭命令窗口。浏览器打开 http://localhost:8081/ ，即可设置并观察自己的物种。
+3. 两个窗口需要保持运行。结束体验时，在两个命令窗口按 Ctrl+C 或关闭窗口。
+
+三、朋友通过局域网加入
+
+1. 其中一位玩家运行 Start-Server.bat。双方都运行 Start-Client.bat。
+2. 其他玩家在玩家页面右上角打开 profile，断开默认的本机连接，把服务器地址改为 ws://服务器局域网IP:8765，再点击“连接”。也可以在游戏目录的 client.properties 里写 server=ws://服务器局域网IP:8765，以后双击就会自动连接。
+3. 需要双方网络可以互通；必要时由服主检查防火墙对 TCP 8765 的访问。不要填写 localhost，它会指向自己的电脑。
+4. 当前原型没有用户认证或加密，建议只在可信网络内试玩；结束时关闭服务器。
+
+三点四、设置文件（端口、世界规则）
+
+1. 第一次双击 Start-Server.bat / Start-Client.bat 时，游戏目录里会自动生成 server.properties 和 client.properties，每一项都有中文说明。
+2. 用记事本修改后保存，下次双击就会生效。例如：
+   server.properties：server-port=9000、web-port=9001、world-preset=deep-dive、tick-ms=1000
+   client.properties：server=ws://192.168.1.5:9000、web-port=9101、name=你的昵称
+3. 想要更复杂的世界：写一个 Python 世界规则文件（可定义 MANIFEST、on_epoch、on_event，见 docs/world_rules_zh.md），在 server.properties 里填 world-rules=文件名.py。
+4. 只想检查设置是否正确：在命令行运行 Start-Server.bat --check-config。
+5. 命令行参数优先于设置文件，例如 Start-Server.bat --port 9000。
+
+三点五、0.2 新增：深潜世界
+
+1. 双击 Start-Server-DeepDive.bat 启动"深潜"世界，再双击 Start-Client.bat。
+2. 深潜世界里，细胞只能通过身体边界感知外部，内部细胞只看得到相连的同伴；食物主要长在一个看不见、绕地图转圈的肥沃区。
+3. 玩家页面 http://localhost:8081/ 的地图只显示你的细胞感知过的地方：亮的是现在看到的，暗的是以前见过的，黑的是从没见过的。
+4. 在服务器本机打开 http://localhost:8080/ 可观察完整地图；远程观察者仍受隐藏地图规则限制。
+5. 可以在进阶模式载入 species 文件夹里的 blob.py、sensing_forager.py、stalker.py 等示例物种。
+6. 直接双击 Start-Server.bat 仍然启动和 0.1.x 相同的经典世界。
+
+四、界面和进阶玩法
+
+地图可通过滚轮或按钮缩放、拖动；鼠标悬停在细胞上可查看所属有机体的数量、能量和血缘。客户端默认开启呼吸和事件动画，可用“动态 开/关”按钮切换。玩家界面的“世界公屏”可以向所有在线玩家发送消息；服务器观察页面可以只读查看。服主可在服务器控制台的“准备下一个世界”中设置行为消耗、收益，并编辑世界规则文件。组合面板无需编程，可选择行为和细胞协作。进阶面板有 Python 示例和本地模型服务入口；编程指南见 docs/automaton_zh.md。
+
+五、用 Python 命令启动
+
+在游戏目录运行：
+    python -m pip install -r requirements.txt
+    python -m cellgame server
+另开终端：
+    python -m cellgame client
+
+也可以先构建安装包（见 docs/publishing_zh.md），安装 dist/cellgame-0.2.0-py3-none-any.whl 后运行 cellgame-server 和 cellgame-client；本版本尚未发布到 PyPI。
+
+如出现“python not found”，请重新安装或配置 Python 的 PATH。如果网页打不开，请先确认对应的服务端或客户端窗口仍在运行，并检查 8080、8081、8765 端口是否被占用。
+
+六、第三方客户端与内核
+
+Python 集成统一从 cellgame.api 导入，无需打开网页。游戏协议与规则接口见 docs/CORE_STANDARD_zh.md，检查报告见 docs/CORE_REVIEW_zh.md。
+运行 python -m cellgame contract 查看机器可读定义，添加 --schema 查看协议 Schema。
+examples/protocol_agent.py 是直接通过游戏协议连接的无 GUI 示例（需要 radius / blanket 世界）。接口契约为 1.0.0-rc.1；本轮没有发布独立 core 包。

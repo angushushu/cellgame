@@ -1,0 +1,159 @@
+{
+  "manifest_version": 1,
+  "id": "custom",
+  "name": "自定义世界",
+  "world": {
+    "width": 16,
+    "height": 16,
+    "topology": "bounded"
+  },
+  "perception": {
+    "model": "radius",
+    "radius": 1,
+    "metric": "chebyshev"
+  },
+  "observation": {
+    "version": 2,
+    "coordinates": "absolute"
+  },
+  "visibility": {
+    "others_interior": "visible",
+    "state": "all",
+    "energy": "all",
+    "type": "all",
+    "spectator": "full"
+  },
+  "ecology": {
+    "metabolism": {
+      "boundary": 1,
+      "interior": 1
+    }
+  },
+  "actions": [
+    {
+      "name": "move",
+      "id": 0,
+      "target": "neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "attack",
+      "id": 1,
+      "target": "neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "reproduce",
+      "id": 2,
+      "target": "neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "eat",
+      "id": 3,
+      "target": "self",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "change",
+      "id": 4,
+      "target": "self",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "die",
+      "id": 5,
+      "target": "self",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "set_state",
+      "id": 6,
+      "target": "self",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "bond",
+      "id": 7,
+      "target": "neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "unbond",
+      "id": 8,
+      "target": "neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "transfer",
+      "id": 9,
+      "target": "bonded_neighbor",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "move_group",
+      "id": 10,
+      "target": "component",
+      "enabled": true,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ]
+    },
+    {
+      "name": "sense",
+      "id": 11,
+      "target": "self",
+      "enabled": false,
+      "actor_roles": [
+        "boundary",
+        "interior"
+      ],
+      "cost_per_radius": 1,
+      "max_radius": 4
+    }
+  ],
+  "combat": {
+    "bonded_support_percent": 0
+  }
+}

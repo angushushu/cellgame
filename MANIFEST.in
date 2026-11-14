@@ -1,0 +1,5 @@
+include requirements.txt
+include client/start.bat server/start.bat
+recursive-include docs *.md
+recursive-include tests *.py *.js
+recursive-include shared *.json

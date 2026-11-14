@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cellgame"
+version = "0.2.0"
+description = "A multiplayer cellular automata game with local programmable species"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=2.0", "websockets>=15"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Topic :: Games/Entertainment :: Simulation",
+]
+
+[project.scripts]
+cellgame = "cellgame.__main__:main"
+cellgame-server = "cellgame.server.main:main"
+cellgame-client = "cellgame.client.main:main"
+
+[tool.setuptools]
+packages = ["cellgame", "cellgame.client", "cellgame.server", "cellgame.server.worlds", "cellgame.shared", "cellgame.species", "cellgame.examples"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"cellgame" = "cellgame"
+"cellgame.client" = "client"
+"cellgame.server" = "server"
+"cellgame.server.worlds" = "server/worlds"
+"cellgame.shared" = "shared"
+"cellgame.species" = "species"
+"cellgame.examples" = "examples"
+
+[tool.setuptools.package-data]
+"cellgame.client" = ["*.html"]
+"cellgame.server" = ["*.html"]
+"cellgame.shared" = ["*.js", "*.json", "schemas/*.json", "fixtures/*.json"]

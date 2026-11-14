@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>编写第一个物种 · CellGame</title>
+<style>body{background:#0b1412;color:#edf4ea;font:15px/1.7 "Segoe UI","Microsoft YaHei",sans-serif;margin:0}main{max-width:780px;margin:auto;padding:35px 22px 70px}a{color:#c8ed86}h1{font-size:29px}h2{font-size:19px;margin-top:35px}p,li{color:#b6c9b8}code,pre{font-family:Consolas,monospace;color:#d8edc8}pre{background:#14241a;border:1px solid #344a39;border-radius:14px;padding:18px;overflow:auto}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:9px;border-bottom:1px solid #344a39;vertical-align:top}th{color:#c8ed86}small{color:#90a798}.note{background:#1b2a20;padding:14px;border-radius:12px}</style></head>
+<body><main><a href="/">← 返回物种实验室</a><h1>五分钟写出第一个物种</h1><p>打开客户端的“进阶模式”，将下面的代码放入编辑器。点击“预览代码”，满意后点击“启用代码”。不需要导入 NumPy，也不需要手动处理数组。</p>
+<pre><code>def decide_cell(cell):
+    if cell.food_here &gt; 0 and cell.energy &lt; 20:
+        return cell.eat()
+
+    empty = cell.empty_neighbors()
+    if empty and cell.energy &gt;= 13:
+        return cell.reproduce(empty[0])
+
+    if empty and cell.energy &gt; 4:
+        return cell.move(empty[0])
+
+    return cell.wait()</code></pre>
+<p>每个时刻，游戏对你的每个细胞调用一次这个函数。每个细胞返回至多一个动作；服务器根据能量、距离和目标位置判断动作能否成功。</p>
+<h2>细胞能看见什么？</h2><table><tr><th>信息</th><th>含义</th></tr><tr><td><code>cell.energy</code></td><td>细胞的能量</td></tr><tr><td><code>cell.food_here</code></td><td>当前位置的食物</td></tr><tr><td><code>cell.x</code>、<code>cell.y</code>、<code>cell.tick</code></td><td>坐标和当前时刻</td></tr><tr><td><code>cell.state</code>、<code>cell.cell_type</code></td><td>公开整数状态和类型</td></tr><tr><td><code>cell.empty_neighbors()</code></td><td>空邻格的方向列表，如 <code>(1, 0)</code></td></tr><tr><td><code>cell.surrounding()</code></td><td>八个邻格；可读取 <code>is_enemy</code>、<code>is_empty</code>、<code>food</code>、<code>energy</code> 等</td></tr></table>
+<h2>返回一个动作</h2><p><code>cell.eat()</code> 进食；<code>cell.move((dx, dy))</code> 移动；<code>cell.reproduce((dx, dy))</code> 繁殖；<code>cell.attack((dx, dy))</code> 攻击；<code>cell.change_type(1)</code> 切换装甲；<code>cell.wait()</code> 等待。</p>
+<h2>让细胞记住一个状态</h2><pre><code>def decide_cell(cell):
+    return cell.set_state(1 - cell.state)</code></pre><p>这个例子让状态在 0 和 1 之间切换。状态是公开整数，移动时保留，新生细胞从 0 开始。修改状态占用该细胞本时刻的动作。</p>
+<h2>连接和协作</h2><p>在进阶示例中选择“连接与分享示例”。<code>cell.reproduce(direction, bond=True)</code> 让新生细胞与父细胞相连；<code>cell.bond(direction)</code> 与邻居连接；<code>cell.unbond(direction)</code> 断开；<code>cell.transfer(direction, 3)</code> 向已连接邻居传递最多 3 点能量。<code>n.is_bonded</code> 判断是否连接。每次操作占一个动作。普通移动无法移动连接中的细胞；<code>cell.move_group(direction)</code> 可以尝试让连接组一起移动，所有目标都要可用、每个细胞都要有足够能量，最多 256 个细胞。</p><p>需要新版服务端。“自己人”是同一玩家的细胞，不一定是同一个独立生物；地图边界只是空间提示，不保证马尔可夫毯。</p>
+<h2>观察生命世界</h2><p>地图中的细胞会缓慢呼吸，相连的细胞会共享节奏。使用地图工具栏“动态 开/关”控制呼吸和事件动画；客户端默认开启，也可以随时关闭。“定位我的细胞”会定位到视野附近的一个己方细胞并放大地图。呼吸只是视觉效果，不影响模拟与游戏规则。</p><h2>世界群系与出生</h2><p>地图包含草地、森林、沙漠和冻原；不同群系有不同的初始温度与食物密度。新玩家优先出生在远离其他玩家的位置，世界拥挤时距离可能缩短。有限感知世界只显示已感知或记忆的区域；不显示的区域不代表空地。</p><h2>食物与危险</h2><p>绿色是普通食物，粉色是浆果区的食物（额外 +2 能量），橙色是熔岩（每 tick −5），紫色是尖刺（每 tick −2）。服务器可以选择“围棋生态”规则文件：上下左右相邻的同玩家细胞共同计算气，无气群每轮同时死亡；对角线不能建立连接。单细胞可读取 <code>cell.material_here</code>、<code>cell.biome_here</code>，或从 <code>cell.sense(dx,dy)</code> 读取 material、biome；无法感知时为 None。</p><h2>三个控制尺度</h2><p>每份规则任选一个入口。<code>decide_cell</code> 对每个细胞调用；<code>decide_entity</code> 对每个由连接组成的个体调用；<code>decide_unity</code> 对本玩家当前观察到的全部连接个体调用。后两者返回动作列表或 None；每个细胞每轮最多一个动作。</p>
+<pre><code>def decide_entity(entity):
+    actions = []
+    for cell in entity.boundary:
+        if cell.food_here &gt; 0 and cell.energy &lt; 20:
+            actions.append(cell.eat())
+    return actions</code></pre>
+<p><code>entity.cells</code> 是成员细胞，<code>entity.energy</code> 是能量总和，<code>entity.boundary</code> 是边界细胞。连接和断开会改变个体，实体对象每轮重建。</p>
+<pre><code>def decide_unity(unity):
+    actions = []
+    for entity in unity.members:
+        for cell in entity.boundary:
+            if cell.food_here &gt; 0 and cell.energy &lt; 20:
+                actions.append(cell.eat())
+    return actions</code></pre>
+<p>目前 Unity 是客户端对本玩家全部连接个体的临时视图，不是服务器持久群体，也不是跨玩家连接。不同尺度可以做复杂计算，但都通过细胞提交动作，最终由服务器裁决。</p>
+<h2>连接自己的本地 ML 算法</h2><ol><li>在安装 CellGame 的 Python 环境运行 <code>python -m cellgame.examples.local_agent_service</code>，启动一个本机 HTTP 适配器。示例使用手写规则，本身不是 ML 模型。</li><li>在“code &amp; model”的 model service 输入 <code>http://127.0.0.1:9000/decide</code>，点击启用；连接世界后，每轮客户端 POST 一份观察并等待返回动作。</li><li>编辑示例中的 <code>choose_actions(observation)</code>：把观察转换为模型输入，调用自己的 Python 模型，返回动作列表。模型应事先加载在服务进程中，并在客户端超时前返回。</li></ol>
+<p>请求包含 <code>version</code>、<code>tick</code>、<code>cells</code>、<code>neighborhood</code>、<code>env</code> 和 <code>constraints</code>；新感知世界还提供可选的 <code>observation</code>。每个 cell 是 <code>[x,y,type,state,energy]</code>。返回相同 tick、最多每个自有细胞一项动作：</p>
+<pre><code>{"tick": 3, "actions": [[1, 2, 1, 2, 3, 0, 0]]}</code></pre>
+<p>动作格式为 <code>[源x,源y,目标x,目标y,动作,0,参数]</code>，示例中的 3 是原地进食。空动作使用 <code>[]</code>。模型接口需要这个适配协议，普通聊天模型 URL 不能直接使用；只接受本机 HTTP 地址。连接失败或响应超时会显示在运行信息中。服务器决定可以观察的信息和允许的动作；不同感知模式下可见范围不同。</p>
+<h2>接口与第三方客户端</h2><p>核心契约为 <code>1.0.0-rc.1</code>，Python 集成从 <code>cellgame.api</code> 导入。查看<a href="/api/contract" target="_blank" rel="noopener">接口注册表</a>与<a href="/api/protocol-schema" target="_blank" rel="noopener">协议 Schema</a>；完整约定见项目 <code>docs/CORE_STANDARD_zh.md</code>。可选声明 <code>PLAYER_API_VERSION = 1</code>，旧规则省略时仍按版本 1 加载。</p><h2>组合和代码</h2><p>展开物种原型与行为组合可修改设置。进阶面板的“当前组合对应的代码”随设置更新，也可以直接修改并预览、启用。修改组合会重新生成代码，之前的编辑可通过“恢复上次编辑”找回；自定义编辑器则独立保存，复制会替换编辑器内容。应用组合与启用代码分别切换当前控制器，预览不修改世界。</p><p class="note">玩家本地的程序可以维护更复杂的模型；服务器负责限制与世界交互的范围。高级批量接口和本地模型服务说明见项目的 <code>README.md</code>，完整细胞字段见 <code>docs/automaton_zh.md</code>。</p><small>本地预览使用默认世界规则；不同服务器的世界条件可能不同。</small></main></body></html>

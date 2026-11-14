@@ -1,0 +1,392 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CellGame transport v2 / 1.0.0-rc.1",
+  "type": "object",
+  "required": [
+    "type",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "array": {
+      "type": "object",
+      "required": [
+        "__ndarray__"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "__ndarray__": {
+          "type": "object",
+          "required": [
+            "dtype",
+            "shape",
+            "data"
+          ],
+          "properties": {
+            "dtype": {
+              "type": "string"
+            },
+            "shape": {
+              "type": "array",
+              "maxItems": 4,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "data": {
+              "type": "string",
+              "contentEncoding": "base64"
+            },
+            "byteorder": {
+              "const": "little"
+            },
+            "order": {
+              "const": "C"
+            },
+            "descr": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "hello"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [],
+            "properties": {
+              "protocol_version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "protocol_versions": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "welcome"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "player_id",
+              "world_w",
+              "world_h"
+            ],
+            "properties": {
+              "player_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "world_w": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "world_h": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "observation"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "version",
+              "tick",
+              "manifest",
+              "cells",
+              "tiles",
+              "constraints"
+            ],
+            "properties": {
+              "version": {
+                "const": 2
+              },
+              "tick": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manifest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "cells": {
+                "$ref": "#/$defs/array"
+              },
+              "tiles": {
+                "$ref": "#/$defs/array"
+              },
+              "events": {
+                "$ref": "#/$defs/array"
+              },
+              "materials": {
+                "$ref": "#/$defs/array"
+              },
+              "biomes": {
+                "$ref": "#/$defs/array"
+              },
+              "constraints": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "intentions"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "tick",
+              "data"
+            ],
+            "properties": {
+              "tick": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "format": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              "data": {
+                "anyOf": [
+                  {
+                    "type": "array"
+                  },
+                  {
+                    "$ref": "#/$defs/array"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "world_snapshot"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "tick",
+              "arrays"
+            ],
+            "properties": {
+              "tick": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "arrays": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "world_delta"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "tick",
+              "changes"
+            ],
+            "properties": {
+              "tick": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "changes": {
+                "$ref": "#/$defs/array"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "sense_batch"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "tick",
+              "cells",
+              "neighborhood",
+              "env",
+              "constraints"
+            ],
+            "properties": {
+              "tick": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cells": {
+                "$ref": "#/$defs/array"
+              },
+              "neighborhood": {
+                "$ref": "#/$defs/array"
+              },
+              "env": {
+                "$ref": "#/$defs/array"
+              },
+              "constraints": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "error"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "message"
+            ],
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "ping"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [],
+            "properties": {}
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "pong"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [],
+            "properties": {}
+          }
+        }
+      }
+    }
+  ]
+}
