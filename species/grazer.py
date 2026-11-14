@@ -23,20 +23,29 @@ def _neighbors(row):
     return out
 
 
-def decide(cells, neighborhood, env, constraints, tick):
+def decide(cells, neighborhood, env, constraints, tick, observation=None):
+    blocks = {}
+    if observation is not None and "blocks" in observation:
+        blocks = {(int(t["x"]), int(t["y"])): int(b) for t, b in zip(observation["tiles"], observation["blocks"]) if t["env_visible"]}
     out = []
     for i in range(cells.shape[0]):
         x, y, ct, st, en = (int(v) for v in cells[i])
         nbs = _neighbors(neighborhood[i])
-        empties = [(dx, dy) for dx, dy, own, sp, e in nbs if sp == 0]
+        empties = [(dx, dy) for dx, dy, own, sp, e in nbs if sp == 0
+                   and 0 <= x + dx < constraints["world_w"] and 0 <= y + dy < constraints["world_h"]]
+        birth_spaces = [(dx, dy) for dx, dy in empties if blocks.get((x+dx,y+dy), 0) == 0]
         # 1. eat food on our own cell (but keep some room to grow)
         if env[i, 1] > 0 and en < 20:
             out.append([x, y, x, y, Action.EAT, 0, 0])
             continue
         # 2. reproduce into an empty neighbor
-        if en >= 13 and constraints.get("reproduce_enabled", True) and empties:
-            dx, dy = empties[(tick + x * 7 + y * 13) % len(empties)]
+        if en >= 13 and constraints.get("reproduce_enabled", True) and birth_spaces:
+            dx, dy = birth_spaces[(tick + x * 7 + y * 13) % len(birth_spaces)]
             out.append([x, y, x + dx, y + dy, Action.REPRODUCE, 0, 0])
+            continue
+        if empties and not birth_spaces and en > constraints.get("block_attack_cost", 3):
+            dx, dy = empties[0]
+            out.append([x, y, x + dx, y + dy, Action.ATTACK, 0, 0])
             continue
         # 3. wander to an empty neighbor
         if en > 4 and empties:

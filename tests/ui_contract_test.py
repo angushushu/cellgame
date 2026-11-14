@@ -60,7 +60,7 @@ def check(path, client=False):
             "worldHttpPort": {"value": "8082"}, "worldSpeed": {"value": "5000"},
             "worldPreset": {"value": "lush"}, "setupMessage": {}, "launchCommand": {},
             "copyCommand": {}, "launchHelp": {}, "worldRulePath": {"value": ""},
-            "worldMoveCost": {"value": "2"}, "worldAttackCost": {"value": "3"},
+            "worldMoveCost": {"value": "2"}, "worldPushCost": {"value": "0"}, "worldBlockAttackCost": {"value": "3"}, "worldAttackCost": {"value": "3"},
             "worldReproduceCost": {"value": "8"}, "worldReproduceMinEnergy": {"value": "10"},
             "worldChildEnergy": {"value": "5"}, "worldEatGain": {"value": "5"},
             "worldAttackRewardPercent": {"value": "50"}, "worldChangeCost": {"value": "1"},
@@ -69,7 +69,7 @@ def check(path, client=False):
         js = ("const nodes=" + json.dumps(values) + "; const $=id=>nodes[id]; "
               + function.group(0) + "; buildLaunchCommand(); "
               + "if (!nodes.launchCommand.textContent.includes('cellgame server --world-preset lush --tick-ms 5000 --seed 12 --port 8766 --http-port 8082')) throw Error('bad command');"
-              + "if (!nodes.launchCommand.textContent.includes('--move-cost 2') || !nodes.launchCommand.textContent.includes('--eat-gain 5')) throw Error('missing economic options');"
+              + "if (!nodes.launchCommand.textContent.includes('--move-cost 2') || !nodes.launchCommand.textContent.includes('--eat-gain 5') || !nodes.launchCommand.textContent.includes('--push-cost 0') || !nodes.launchCommand.textContent.includes('--block-attack-cost 3')) throw Error('missing economic options');"
               + "nodes.worldHttpPort.value='8766'; buildLaunchCommand();"
               + "if (!nodes.launchCommand.hidden) throw Error('invalid ports accepted');")
         subprocess.run(["node", "-e", js], text=True, encoding="utf-8", check=True)

@@ -144,6 +144,7 @@ def gather_observation(world: Any, player_id: int, manifest: dict[str, Any],
         "tiles": tiles,
         "biomes": np.where(tiles["env_visible"], arrays.env_biome[tiles["y"], tiles["x"]], 0).astype(np.uint8),
         "materials": np.where(tiles["env_visible"], arrays.env_material[tiles["y"], tiles["x"]], 0).astype(np.uint8),
+        "blocks": np.where(tiles["env_visible"], arrays.blocks[tiles["y"], tiles["x"]], 0).astype(np.uint8),
         "events": world.events_for(player_id),
         "constraints": dict(world.constraints),
     }

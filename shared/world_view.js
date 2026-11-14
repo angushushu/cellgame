@@ -9,6 +9,7 @@
 (function (root) {
   'use strict';
   const BIOME_GROUND = {1:[32,55,34],2:[18,62,38],3:[70,57,31],4:[40,58,67]};
+  const BLOCK_COLORS = {1:[151,100,55], 2:[135,145,150], 3:[220,193,115]};
   const PALETTE = ['#F4B66A','#B692F6','#67C9EA','#EF87A7','#F2DE82','#9DAEF5','#E9936C','#8CD6C0'];
   const VECTOR_MIN = 3;          // screen pixels per tile before droplets are drawn
   const EFFECT_MS = 800;         // every visual effect ends within this time
@@ -242,7 +243,8 @@
         else if (owner) {
           if (!colors[owner]) colors[owner] = fromHex(data.colors[owner] || defaultColor(owner));
           color = colors[owner];
-        } else if (data.materials && data.materials[i] === 2) color = [222, 74, 23];
+        } else if (data.blocks && BLOCK_COLORS[data.blocks[i]]) color = BLOCK_COLORS[data.blocks[i]];
+        else if (data.materials && data.materials[i] === 2) color = [222, 74, 23];
         else if (data.materials && data.materials[i] === 3) color = [147, 94, 159];
         else if (data.food[i] > 0) color = data.materials && data.materials[i] === 1 ? [205, 74, 121] : [51, 155, 80];
         else color = ((data.biomes && BIOME_GROUND[data.biomes[i]]) || [11, 23, 16]);
@@ -337,8 +339,15 @@
           ctx.fillRect((x-x0+.15)*sx, (y-y0+.15)*sy, sx*.7, sy*.7);
           ctx.globalAlpha = 1;
         }
+        if (seen && d.blocks && BLOCK_COLORS[d.blocks[i]]) {
+          const color = BLOCK_COLORS[d.blocks[i]];
+          ctx.globalAlpha = seen === 2 ? .42 : 1;
+          ctx.fillStyle = 'rgb(' + color.join(',') + ')';
+          ctx.fillRect((x-x0+.08)*sx, (y-y0+.08)*sy, sx*.84, sy*.84);
+          ctx.globalAlpha = 1;
+        }
         if (d.owners[i]) { if (!hidden.has(i)) cells.push(i); }
-        else if (d.food[i] > 0) food.push(i);
+        else if ((!d.blocks || !d.blocks[i]) && d.food[i] > 0) food.push(i);
       }
       if (s >= 12) {   // faint lattice once tiles are large
         ctx.strokeStyle = 'rgba(160,220,180,.045)'; ctx.lineWidth = 1; ctx.beginPath();

@@ -209,7 +209,7 @@ class WorldState:
 
     def place_cell(self, player_id, x, y, energy=10, species=None):
         """Create a founder cell on an empty tile and return its cell_id."""
-        if not (0 <= x < self.w and 0 <= y < self.h) or self.arrays.owner[y, x] != 0:
+        if not (0 <= x < self.w and 0 <= y < self.h) or self.arrays.owner[y, x] != 0 or self.arrays.blocks[y, x] != 0:
             raise ValueError(f"cannot place a cell at ({x}, {y})")
         A = self.arrays
         A.organism[y, x] = self.organisms.create(player_id, self.tick)
@@ -279,7 +279,7 @@ class WorldState:
             tries += 1
             x = int(np.clip(cx + int(rng.integers(-8, 9)), 0, self.w - 1))
             y = int(np.clip(cy + int(rng.integers(-8, 9)), 0, self.h - 1))
-            if self.arrays.owner[y, x] == 0 and self.arrays.env_material[y, x] < 2:
+            if self.arrays.owner[y, x] == 0 and self.arrays.blocks[y, x] == 0 and self.arrays.env_material[y, x] < 2:
                 self._visual("birth", x, y, x, y, player_id)
                 self.place_cell(player_id, x, y, energy=10, species=species_id)
                 placed += 1
@@ -324,6 +324,8 @@ class WorldState:
         snap_energy = self.arrays.energy.copy()
         snap_type = self.arrays.cell_type.copy()
         snap_bonds = self.arrays.bonds.copy()
+        snap_blocks = self.arrays.blocks.copy()
+        self._blocks_changed_during_actions = set()
 
         counts = {"move": 0, "attack": 0, "reproduce": 0, "eat": 0,
                   "change": 0, "state": 0, "die": 0}
@@ -400,7 +402,7 @@ class WorldState:
         # REPRODUCE
         for i in np.where(act == int(Action.REPRODUCE))[0]:
             if alive(i) and A.energy[sy[i], sx[i]] >= max(self.constraints["reproduce_min_energy"], action_cost(Action.REPRODUCE, self.constraints)) \
-                    and A.owner[ty[i], tx[i]] == 0:
+                    and A.owner[ty[i], tx[i]] == 0 and A.blocks[ty[i], tx[i]] == 0:
                 A.energy[sy[i], sx[i]] -= action_cost(Action.REPRODUCE, self.constraints)
                 parent_id = int(A.organism[sy[i], sx[i]])
                 if not parent_id:
@@ -423,8 +425,14 @@ class WorldState:
         # MOVE
         for i in np.where(act == int(Action.MOVE))[0]:
             move_cost = action_cost(Action.MOVE, self.constraints) + (self.constraints["armor_move_surcharge"] if A.cell_type[sy[i], sx[i]] == ARMOR_TYPE else 0)
+            if A.blocks[ty[i], tx[i]]:
+                move_cost += self.constraints["push_cost"]
             if alive(i) and A.bonds[sy[i], sx[i]] == 0 and A.energy[sy[i], sx[i]] >= move_cost \
                     and A.owner[ty[i], tx[i]] == 0:
+                push = self._plan_push([(int(tx[i]), int(ty[i]))], int(tx[i]-sx[i]), int(ty[i]-sy[i]))
+                if push is None:
+                    continue
+                self._apply_push(push)
                 A.energy[sy[i], sx[i]] -= move_cost
                 self._visual("move", sx[i], sy[i], tx[i], ty[i], player_ids[i], A.cell_type[sy[i], sx[i]])
                 for f in CELL_FIELDS:
@@ -462,11 +470,16 @@ class WorldState:
             dx, dy = int(tx[i] - sx[i]), int(ty[i] - sy[i])
             if any(not (0 <= x + dx < self.w and 0 <= y + dy < self.h) or (A.owner[y+dy, x+dx] != 0 and (x+dx, y+dy) not in component) for x, y in component):
                 continue
+            push = self._plan_push([(x + dx, y + dy) for x, y in component if (x + dx, y + dy) not in component], dx, dy)
+            if push is None:
+                continue
             coords = sorted(component, key=lambda p: (p[1], p[0]))
             xs = np.array([x for x, y in coords]); ys = np.array([y for x, y in coords])
             costs = action_cost(Action.MOVE, self.constraints) + (A.cell_type[ys, xs] == ARMOR_TYPE) * self.constraints["armor_move_surcharge"]
+            costs = costs + (A.blocks[ys + dy, xs + dx] != 0) * self.constraints["push_cost"]
             if np.any(A.energy[ys, xs] < costs):
                 continue
+            self._apply_push(push)
             fields = CELL_FIELDS + ("bonds",)
             values = {field: getattr(A, field)[ys, xs].copy() for field in fields}
             values["energy"] -= costs.astype(values["energy"].dtype)
@@ -484,6 +497,20 @@ class WorldState:
             [i for i in proposals if not applied[i] and (int(sx[i]), int(sy[i])) in moved], dtype=np.int64)
         # ATTACK (lands only if the victim is still the same owner's cell)
         for i in np.where(act == int(Action.ATTACK))[0]:
+            x, y = int(tx[i]), int(ty[i])
+            if snap_owner[y, x] == 0 and snap_blocks[y, x] != 0:
+                cost = self.constraints["block_attack_cost"]
+                if (alive(i) and A.energy[sy[i], sx[i]] >= cost and A.owner[y, x] == 0
+                        and (x, y) not in self._blocks_changed_during_actions and A.blocks[y, x] == snap_blocks[y, x]):
+                    block = int(A.blocks[y, x])
+                    A.blocks[y, x] = 0
+                    A.energy[sy[i], sx[i]] -= cost
+                    self._visual("attack", sx[i], sy[i], x, y, player_ids[i], A.cell_type[sy[i], sx[i]])
+                    self.last_rule_events.append({"type": "break_block", "x": x, "y": y,
+                                                  "block": block, "cell_id": int(A.cell_id[sy[i], sx[i]])})
+                    applied[i] = True
+                    counts["attack"] += 1
+                continue
             if alive(i) and A.energy[sy[i], sx[i]] >= action_cost(Action.ATTACK, self.constraints) \
                     and snap_owner[ty[i], tx[i]] != 0 \
                     and snap_owner[ty[i], tx[i]] != player_ids[i] \
@@ -505,8 +532,44 @@ class WorldState:
             self.version += 1
         return counts
 
+    def seed_blocks(self, seed=0):
+        """Populate sparse wood, stone and sand on safe ground, reproducibly."""
+        rng = np.random.default_rng(seed + 83417)
+        a = self.arrays
+        roll = rng.random((self.h, self.w))
+        allowed = (a.owner == 0) & (a.env_material < 2)
+        a.blocks[allowed & (roll < .025)] = 1  # wood
+        a.blocks[allowed & (roll >= .025) & (roll < .045)] = 2  # stone
+        a.blocks[allowed & (roll >= .045) & (roll < .065)] = 3  # sand
+
+    def _plan_push(self, starts, dx, dy):
+        """Plan parallel block chains atomically; cells and edges stop them."""
+        a = self.arrays
+        blocks = set()
+        for x, y in starts:
+            while 0 <= x < self.w and 0 <= y < self.h and a.blocks[y, x]:
+                blocks.add((x, y))
+                if len(blocks) > 64:
+                    return None
+                x, y = x + dx, y + dy
+            if not (0 <= x < self.w and 0 <= y < self.h) or a.owner[y, x]:
+                return None
+        return sorted(blocks, key=lambda p: p[0]*dx + p[1]*dy, reverse=True), dx, dy
+
+    def _apply_push(self, plan):
+        blocks, dx, dy = plan
+        for x, y in blocks:
+            self._blocks_changed_during_actions.update(((x, y), (x + dx, y + dy)))
+            self.arrays.blocks[y + dy, x + dx] = self.arrays.blocks[y, x]
+            self.arrays.blocks[y, x] = 0
+
     def ecology(self):
         """Energy-0 cells die at end of tick."""
+        # Lava burns wood and fuses sand into stone, without changing terrain.
+        a = self.arrays
+        lava = a.env_material == 2
+        a.blocks[lava & (a.blocks == 1)] = 0
+        a.blocks[lava & (a.blocks == 3)] = 2
         interval = self.constraints["metabolism_interval"]
         if interval and self.tick > 0 and self.tick % interval == 0:
             self._metabolize()
@@ -577,7 +640,7 @@ class WorldState:
         self._last_organism_metadata = metadata
         delta = compute_delta(self._last_sent, self.arrays)
         environment = {}
-        for field in ("env_food", "env_temp", "bonds", "organism"):
+        for field in ("env_food", "env_temp", "blocks", "bonds", "organism"):
             if not np.array_equal(getattr(self._last_sent, field), getattr(self.arrays, field)):
                 environment[field] = getattr(self.arrays, field).copy()
         self._last_sent = self.arrays.copy()

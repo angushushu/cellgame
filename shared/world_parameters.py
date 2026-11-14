@@ -3,6 +3,7 @@ from .models import ACTION_COST, Action, EAT_MAX_GAIN, REPRODUCE_MIN_ENERGY, REP
 
 DEFAULTS = {
     "move_cost": ACTION_COST[Action.MOVE], "attack_cost": ACTION_COST[Action.ATTACK],
+    "push_cost": 0, "block_attack_cost": 3,
     "reproduce_cost": ACTION_COST[Action.REPRODUCE], "change_cost": ACTION_COST[Action.CHANGE],
     "reproduce_min_energy": REPRODUCE_MIN_ENERGY, "child_energy": REPRODUCE_CHILD_ENERGY,
     "eat_gain": EAT_MAX_GAIN, "attack_reward_percent": 50,

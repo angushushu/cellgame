@@ -35,7 +35,9 @@ def decide_cell(cell):
 | `cell.empty_neighbors()` | 地图内空邻格的 `(dx, dy)` 列表 |
 | `cell.surrounding()` | 八个邻格的对象，含地图边界信息 |
 
-每个邻格对象提供 `dx`、`dy`、`in_bounds`、`is_empty`、`is_mine`、`is_enemy`、`species`、`cell_type`、`state`、`energy`、`food`、`material`、`biome` 和 `observed`。地图外的邻格 `in_bounds` 为假，不是空格；有限感知中 observed 为假表示未知，也不是空格。
+每个邻格对象提供 `dx`、`dy`、`in_bounds`、`is_empty`、`is_mine`、`is_enemy`、`species`、`cell_type`、`state`、`energy`、`food`、`material`、`biome`、`block` 和 `observed`。地图外的邻格 `in_bounds` 为假，不是空格；有限感知中 observed 为假表示未知，也不是空格。
+
+`cell.sense(dx, dy).block` 和邻格的 `block` 使用 0 空、1 木头、2 石头、3 沙子；不可见或旧版服务器无此数据时为 `None`。`is_empty` 只表示没有细胞，繁殖时还需确认方块为空。向方块移动会尝试推动，向方块攻击会尝试破坏。
 
 ## 可返回的动作
 
@@ -44,7 +46,7 @@ def decide_cell(cell):
 | 进食 | `return cell.eat()` |
 | 移动 | `return cell.move((dx, dy))` |
 | 繁殖 | `return cell.reproduce((dx, dy))` |
-| 攻击 | `return cell.attack((dx, dy))` |
+| 攻击 | `return cell.attack((dx, dy))`；目标可以是敌方细胞或方块 |
 | 修改类型 | `return cell.change_type(1)`；1 是装甲 |
 | 修改状态 | `return cell.set_state(1)` |
 | 等待 | `return cell.wait()` |

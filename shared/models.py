@@ -77,7 +77,7 @@ FLAG_STATE = 8
 FLAG_ENERGY = 16
 
 WORLD_FIELDS = ("owner", "species", "cell_type", "state", "energy",
-                "env_temp", "env_food", "env_biome", "env_material", "bonds", "organism")
+                "env_temp", "env_food", "env_biome", "env_material", "blocks", "bonds", "organism")
 # Server-private fields: copied with the world but not part of snapshots,
 # deltas or recordings. cell_id is a stable per-cell identity (0 = none).
 INTERNAL_FIELDS = ("cell_id",)
@@ -104,6 +104,7 @@ class WorldArrays:
         self.env_food = np.zeros((h, w), dtype=np.float32)
         self.env_biome = np.zeros((h, w), dtype=np.uint8)
         self.env_material = np.zeros((h, w), dtype=np.uint8)
+        self.blocks = np.zeros((h, w), dtype=np.uint8)
 
     def copy(self):
         other = WorldArrays(self.w, self.h)

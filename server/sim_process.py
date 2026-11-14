@@ -64,6 +64,8 @@ def sim_loop(cmd_queue, event_queue, config):
     from cellgame.shared.world_parameters import validate_parameters
     world.constraints.update(validate_parameters(config.get("world_parameters", {})))
     rules = WorldRuleEngine(config["world_rules_path"])
+    if rules.ns.get("GENERATE_BLOCKS", True):
+        world.seed_blocks(config.get("seed", 0))
     tick_period = config.get("tick_ms", 3000) / 1000.0
     deadline_ratio = config.get("deadline_ms", 2500) / config.get("tick_ms", 3000)
     epoch_interval = config.get("epoch_interval", 10)
@@ -155,7 +157,10 @@ def sim_loop(cmd_queue, event_queue, config):
         # 4. per-player perception: legacy sense batches or observation v2
         for pid in list(players):
             if legacy:
-                emit(("sense", pid, world.gather_sense(pid)))
+                batch = world.gather_sense(pid)
+                # Optional extension: legacy clients may ignore the v2-shaped local view.
+                batch["local_observation"] = gather_observation(world, pid, manifest, world_run)
+                emit(("sense", pid, batch))
             else:
                 emit(("observation", pid, gather_observation(world, pid, manifest, world_run)))
         world.end_observation_window()

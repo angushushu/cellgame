@@ -52,7 +52,8 @@ def formation_birth(entity, shape, threshold):
             if cell.energy < threshold:
                 continue
             for dx,dy in cell.empty_neighbors():
-                if (cell.x+dx,cell.y+dy) in targets:
+                p = cell.sense(dx, dy)
+                if (cell.x+dx,cell.y+dy) in targets and (p is None or p.block in (None, 0)):
                     return (cell.x,cell.y), (dx,dy)
     return None
 
@@ -154,6 +155,7 @@ def decide_with_config(config, cells, neighborhood, env, constraints, tick, obse
     def choose(cell):
         empties = cell.empty_neighbors()
         neighbors = cell.surrounding()
+        birth_spaces = [(n.dx, n.dy) for n in neighbors if n.is_empty and n.block in (None, 0)]
         if config.get("release_bonds", False):
             bonded = next((n for n in neighbors if n.is_bonded), None)
             if bonded:
@@ -186,13 +188,13 @@ def decide_with_config(config, cells, neighborhood, env, constraints, tick, obse
                 continue
             if behavior == "eat" and cell.food_here > 0 and cell.energy < config["eat_below"]:
                 return cell.eat()
-            if behavior == "reproduce" and cell.energy >= reproduce_at and empties and constraints.get("reproduce_enabled", True):
+            if behavior == "reproduce" and cell.energy >= reproduce_at and birth_spaces and constraints.get("reproduce_enabled", True):
                 if formation != "free":
                     direction = growth.get((cell.x, cell.y))
-                    if direction is not None:
+                    if direction is not None and direction in birth_spaces:
                         return cell.reproduce(direction, bond=True)
                 else:
-                    return cell.reproduce(empties[(tick + cell.x * 7 + cell.y * 13) % len(empties)], bond=config.get("bond_newborn", False))
+                    return cell.reproduce(birth_spaces[(tick + cell.x * 7 + cell.y * 13) % len(birth_spaces)], bond=config.get("bond_newborn", False))
             if behavior == "attack" and cell.energy >= 3:
                 bonus = constraints.get("armor_defense_bonus", 3)
                 targets = [e for e in enemies if cell.energy > e[2] + (bonus if e[3] == 1 else 0)]
@@ -201,6 +203,10 @@ def decide_with_config(config, cells, neighborhood, env, constraints, tick, obse
                     return [cell.x, cell.y, cell.x + dx, cell.y + dy, Action.ATTACK, 0, 0]
             if behavior == "defend" and enemies and cell.cell_type != 1 and cell.energy >= 2:
                 return [cell.x, cell.y, cell.x, cell.y, Action.CHANGE, 0, 1]
+            if behavior == "move" and not birth_spaces and not cell.bonds and cell.energy > constraints.get("block_attack_cost", 3):
+                obstacle = next((n for n in neighbors if n.is_empty and n.block not in (None, 0)), None)
+                if obstacle:
+                    return cell.attack((obstacle.dx, obstacle.dy))
             if behavior == "move" and (not cell.bonds or config.get("group_move", False)) and empties and cell.energy > config["move_above"]:
                 move = cell.move_group if cell.bonds else cell.move
                 if cue in empties:

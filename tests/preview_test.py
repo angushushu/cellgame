@@ -14,11 +14,24 @@ from shared.arbiter import _det_hash
 class FixedWorld(WorldState):
     def spawn_player(self, player_id, species_id, count=20, seed=None):
         x, y = ((4, 4) if player_id == 1 else (5, 4))
-        self.arrays.owner[y, x] = player_id
-        self.arrays.species[y, x] = species_id
-        self.arrays.energy[y, x] = 10
+        self.arrays.blocks[y, x] = 0
+        self.place_cell(player_id, x, y, energy=10, species=species_id)
         return 1
 
+
+class BlockWorld(WorldState):
+    def seed_blocks(self, seed=0):
+        self.arrays.blocks[:] = 0
+        self.arrays.blocks[4, 5] = 1
+    def spawn_player(self, player_id, species_id, count=20, seed=None):
+        self.place_cell(player_id, 4, 4, energy=20, species=species_id)
+        return 1
+
+BLOCK_RULE = """
+def decide_cell(cell):
+    p = cell.sense(1, 0)
+    return cell.attack((1, 0)) if p and p.block == 1 else cell.wait()
+"""
 
 MOVE = """
 def decide(cells, neighborhood, env, constraints, tick):
@@ -45,6 +58,12 @@ def main():
         assert result["final_grid"]["owner"][5][5] == winner
         other_tick = 1 if _det_hash(0, 5, 5, 4, 4) < _det_hash(0, 5, 5, 5, 4) else 2
         assert winner != other_tick
+    finally:
+        preview.WorldState = previous
+    try:
+        preview.WorldState = BlockWorld
+        result = preview.run_preview(BLOCK_RULE, ticks=1, size=16)
+        assert result["attacks"] == 1 and result["final_grid"]["blocks"][4][5] == 0
     finally:
         preview.WorldState = previous
     try:

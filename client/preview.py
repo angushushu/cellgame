@@ -8,8 +8,11 @@ species file can be loaded as a rival.
 import numpy as np
 import os
 import multiprocessing as mp
+import copy
+from cellgame.server.perception import gather_observation
+from cellgame.shared.observation import expand_observation
 
-from cellgame.shared.arbiter import arbitrate
+from cellgame.server.kernel import resolve_tick
 from cellgame.shared.models import INTENTION_DTYPE
 from cellgame.server.world import WorldState
 from cellgame.server.world_rules import WorldRuleEngine, apply_world_params, run_tick_event
@@ -27,6 +30,11 @@ def run_preview(source, ticks=200, size=32, rival_source=None, seed=0, world_rul
     world = WorldState(size, size, seed=seed)
     path = world_rules_path or os.path.join(os.path.dirname(os.path.dirname(__file__)), "server", "default_world_rules.py")
     rules = WorldRuleEngine(path)
+    if rules.ns.get("GENERATE_BLOCKS", True):
+        world.seed_blocks(seed)
+    manifest = copy.deepcopy(world.manifest)
+    manifest["world"].update(width=size, height=size)
+    world.configure(manifest)
     decide = load_decide(source)
     rival = load_decide(rival_source) if rival_source else None
     world.spawn_player(1, 1, count=15, seed=seed + 1)
@@ -53,30 +61,26 @@ def run_preview(source, ticks=200, size=32, rival_source=None, seed=0, world_rul
             if len(batch["cells"]) == 0:
                 continue
             try:
+                obs = expand_observation(gather_observation(world, pid, manifest, "preview"), manifest)
                 out = fn(batch["cells"], batch["neighborhood"], batch["env"],
-                         batch["constraints"], t)
+                         batch["constraints"], t, observation=obs)
             except Exception as exc:
                 raise RuntimeError(f"规则在 tick {t} 出错: {type(exc).__name__}: {exc}") from exc
             arr = to_intentions(out)
             if len(arr):
                 intents.append(arr)
                 pids.append(np.full(len(arr), pid, dtype=np.int32))
-        counts = {"move": 0, "attack": 0, "reproduce": 0, "eat": 0, "change": 0, "state": 0, "die": 0}
-        if intents:
-            all_intents = np.concatenate(intents)
-            all_pids = np.concatenate(pids)
-            resolved = arbitrate(all_intents, world, world.constraints,
-                                 tick=t + 1, player_ids=all_pids)
-            if len(resolved):
-                counts = world.apply_intentions(
-                    resolved,
-                    world.arrays.owner[resolved["src_y"], resolved["src_x"]])
-                births += counts["reproduce"]
-                eats += counts["eat"]
-                attacks += counts["attack"]
         world.tick = t + 1
-        ecology_deaths = world.ecology()
+        pending = {}
+        if intents:
+            pending[0] = (np.concatenate(intents), np.concatenate(pids))
+        counts = resolve_tick(world, pending, rules)
+        births += counts["reproduce"]
+        eats += counts["eat"]
+        attacks += counts["attack"]
+        ecology_deaths = world._last_ecology
         deaths += ecology_deaths
+        world.end_observation_window()
         previous_counts = dict(counts, ecology_deaths=ecology_deaths)
         mask = world.arrays.owner == 1
         population.append(int(mask.sum()))
@@ -97,6 +101,7 @@ def run_preview(source, ticks=200, size=32, rival_source=None, seed=0, world_rul
             # species per cell, row-major, for the console mini-canvas
             "species": final.species.astype(np.int32).tolist(),
             "owner": final.owner.astype(np.int32).tolist(),
+            "blocks": final.blocks.astype(np.uint8).tolist(),
         },
     }
 

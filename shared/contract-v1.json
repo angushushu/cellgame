@@ -305,7 +305,9 @@
   },
   "extensions": {
     "biomes": "optional uint8, one per tiles row; 0 = unavailable",
-    "materials": "optional uint8, one per tiles row; 0 = ordinary or unavailable; check env_visible"
+    "materials": "optional uint8, one per tiles row; 0 = ordinary or unavailable; check env_visible",
+    "blocks": "optional uint8 per tile; 0 empty, 1 wood, 2 stone, 3 sand; check env_visible",
+    "legacy_local_observation": "optional local_observation in sense_batch, v2 observation layout; legacy intentions remain format 1"
   },
   "authority": "server validates effects; player programs and local models propose actions",
   "gui_api": "experimental; /api/state and UI layout are not the game transport"

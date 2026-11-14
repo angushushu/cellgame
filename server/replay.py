@@ -37,7 +37,7 @@ def iter_replay(path):
                     raise ValueError("replay ticks are out of order")
                 apply_delta(world, delta["changes"])
                 for field, value in delta.get("environment", {}).items():
-                    if field not in ("env_food", "env_temp", "bonds", "organism"):
+                    if field not in ("env_food", "env_temp", "blocks", "bonds", "organism"):
                         raise ValueError("unexpected environment field")
                     setattr(world, field, value.copy())
                 tick = delta["tick"]

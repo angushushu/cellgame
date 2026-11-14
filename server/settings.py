@@ -17,7 +17,9 @@ PRESETS = ("balanced", "lush", "challenging", "deep-dive", "go")
 TITLE = "CellGame 服务器设置（server.properties）"
 
 _ECONOMY_HELP = {
-    "move_cost": "移动一格消耗的能量", "attack_cost": "攻击消耗的能量",
+    "move_cost": "移动一格消耗的能量", "attack_cost": "攻击细胞消耗的能量",
+    "push_cost": "推动方块时每个接触方块的移动细胞额外消耗的能量",
+    "block_attack_cost": "破坏方块消耗的能量",
     "reproduce_cost": "繁殖时父细胞消耗的能量", "change_cost": "改变细胞类型（如变装甲）消耗的能量",
     "reproduce_min_energy": "繁殖所需的最低能量（物种设置无法低于它）", "child_energy": "新生细胞的初始能量",
     "eat_gain": "每次进食最多获得的能量", "attack_reward_percent": "击败敌方细胞后获得其能量的百分比",

@@ -32,7 +32,7 @@ from cellgame.shared.chat import validate_chat_text
 from cellgame import __version__ as CLIENT_VERSION
 
 WORLD_RULE_KEYS = ("reproduce_min_energy", "reproduce_cost", "child_energy", "move_cost",
-                   "eat_gain", "attack_cost", "metabolism_interval", "reproduce_enabled")
+                   "eat_gain", "attack_cost", "push_cost", "block_attack_cost", "metabolism_interval", "reproduce_enabled")
 
 
 class ConsoleServer:
@@ -86,6 +86,7 @@ class ConsoleServer:
         food_b64 = None
         biome_b64 = None
         material_b64 = None
+        blocks_b64 = None
         bonds_b64 = None
         organism_b64 = None
         stats = []
@@ -103,6 +104,7 @@ class ConsoleServer:
             bonds_b64 = base64.b64encode(world.bonds.tobytes()).decode("ascii")
             biome_b64 = base64.b64encode(world.env_biome.tobytes()).decode("ascii")
             material_b64 = base64.b64encode(world.env_material.tobytes()).decode("ascii")
+            blocks_b64 = base64.b64encode(world.blocks.tobytes()).decode("ascii")
             organism_b64 = base64.b64encode(world.organism.astype("<i4").tobytes()).decode("ascii")
             # 1 byte per cell: food amount, scaled (0 = none)
             food_b64 = base64.b64encode(
@@ -147,7 +149,7 @@ class ConsoleServer:
             "view_b64": view_b64,
             "owner_b64": owner_b64,
             "type_b64": type_b64, "bonds_b64": bonds_b64, "organism_b64": organism_b64,
-            "food_b64": food_b64, "biome_b64": biome_b64, "material_b64": material_b64,
+            "food_b64": food_b64, "biome_b64": biome_b64, "material_b64": material_b64, "blocks_b64": blocks_b64,
             "seen_b64": seen_b64,
             "world_w": world.w if world is not None else 256,
             "world_h": world.h if world is not None else 256,

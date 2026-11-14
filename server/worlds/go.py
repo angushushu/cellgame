@@ -3,6 +3,8 @@ import numpy as np
 from cellgame.shared.models import Action
 from cellgame.server.default_world_rules import on_epoch, on_event, after_actions, before_ecology as material_effects
 
+GENERATE_BLOCKS = False  # Empty intersections have special meaning in Go.
+
 MANIFEST = {"id": "go", "name": "围棋生态"}
 
 

@@ -51,7 +51,7 @@ macOS/Linux 使用 `venv/bin/python`。更多配置和启动方式见[完整说�
 | :--- | :--- |
 | 物种与本地智能体 | [物种编程指南](docs/automaton_zh.md) · [HTTP 智能体示例](examples/local_agent_service.py) |
 | Cell、Entity 与 Unity | [多尺度接口](docs/MULTISCALE.md) |
-| 世界与感知 | [世界规则](docs/world_rules_zh.md) · [感知与世界清单](docs/WORLD_MANIFEST_zh.md) |
+| 世界与感知 | [世界规则](docs/world_rules_zh.md) · [感知与世界清单](docs/WORLD_MANIFEST_zh.md) · [可移动方块](docs/BLOCKS_zh.md) |
 | 核心与协议 | [核心标准](docs/CORE_STANDARD_zh.md) · [核心评估](docs/CORE_REVIEW_zh.md) |
 | 更多 | [完整说明（英文）](docs/overview_en.md) · [示例](examples/) · [测试](tests/) |
 

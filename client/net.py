@@ -191,6 +191,12 @@ class GameClient:
                     decoded, decoded["owner"].shape[1], decoded["owner"].shape[0])
                 st.tick = payload["tick"]
         elif mtype == "sense_batch":
+            local = payload.pop("local_observation", None)
+            if local is not None:
+                with st.lock:
+                    manifest = st.manifest
+                if manifest is not None:
+                    payload["observation"] = expand_observation(local, manifest)
             await self.on_sense(payload)
         elif mtype == "observation":
             await self.on_observation(payload)

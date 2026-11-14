@@ -104,7 +104,7 @@ class GameServer:
             "tick": self.world_tick,
             "arrays": {f: array_to_b64(getattr(self.world, f))
                        for f in ("owner", "species", "cell_type", "state",
-                                 "energy", "env_temp", "env_food", "env_biome", "env_material", "bonds", "organism")},
+                                 "energy", "env_temp", "env_food", "env_biome", "env_material", "blocks", "bonds", "organism")},
             "organisms": self.organism_stats,
         }
 

@@ -77,6 +77,11 @@ def _costs(rows, arrays, constraints, rules):
     cost[sense] = rows.arr["param"][sense].astype(np.int64) * rules.sense_cost_per_radius
     armored_move = (rows.act == int(Action.MOVE)) & (arrays.cell_type[rows.sy, rows.sx] == ARMOR_TYPE)
     cost += armored_move * constraints.get("armor_move_surcharge", DEFAULTS["armor_move_surcharge"])
+    target_block = arrays.blocks[rows.ty, rows.tx] != 0
+    block_attack = (rows.act == int(Action.ATTACK)) & (arrays.owner[rows.ty, rows.tx] == 0) & target_block
+    cost[block_attack] = constraints.get("block_attack_cost", DEFAULTS["block_attack_cost"])
+    push = (rows.act == int(Action.MOVE)) & target_block
+    cost += push * constraints.get("push_cost", DEFAULTS["push_cost"])
     return cost
 
 
@@ -112,9 +117,10 @@ def _preconditions_ok(rows, arrays, constraints, rules):
     for bit, (dx, dy) in enumerate(DIRECTIONS):
         connected |= (rows.tx - rows.sx == dx) & (rows.ty - rows.sy == dy) & ((src_bonds & (1 << bit)) != 0)
     ok[is_transfer] &= connected[is_transfer]
-    ok[is_attack] &= (tgt_owner[is_attack] != 0) & (tgt_owner[is_attack] != rows.pid[is_attack]) \
-        & (strength[is_attack] > defense[is_attack])
-    ok[is_repro] &= tgt_owner[is_repro] == 0
+    block_target = (tgt_owner == 0) & (arrays.blocks[rows.ty, rows.tx] != 0)
+    enemy_target = (tgt_owner != 0) & (tgt_owner != rows.pid) & (strength > defense)
+    ok[is_attack] &= (block_target | enemy_target)[is_attack]
+    ok[is_repro] &= (tgt_owner[is_repro] == 0) & (arrays.blocks[rows.ty[is_repro], rows.tx[is_repro]] == 0)
     ok[is_eat] &= arrays.env_food[rows.ty[is_eat], rows.tx[is_eat]] > 0
     return ok
 

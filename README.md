@@ -51,7 +51,7 @@ On macOS/Linux, use `venv/bin/python`. See the [full overview](docs/overview_en.
 | :--- | :--- |
 | Species and local agents | [Programming guide](docs/automaton_zh.md) · [HTTP agent example](examples/local_agent_service.py) |
 | Cell, Entity and Unity | [Multiscale interfaces](docs/MULTISCALE.md) |
-| Worlds and perception | [World rules](docs/world_rules_zh.md) · [Perception](docs/WORLD_MANIFEST_zh.md) |
+| Worlds and perception | [World rules](docs/world_rules_zh.md) · [Perception](docs/WORLD_MANIFEST_zh.md) · [Blocks](docs/BLOCKS_zh.md) |
 | Integrations | [Core standard](docs/CORE_STANDARD_zh.md) · [Core review](docs/CORE_REVIEW_zh.md) |
 | More | [Full overview](docs/overview_en.md) · [Examples](examples/) · [Tests](tests/) |
 

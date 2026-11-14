@@ -48,6 +48,7 @@ class Percept:
     env_visible: bool = True
     material: int | None = None
     biome: int | None = None
+    block: int | None = None
     # None is reserved to the legacy adapter, which lacks visibility metadata.
 
     @property
@@ -86,7 +87,7 @@ ROLE_NAMES = {obs_format.BOUNDARY: "boundary", obs_format.INTERIOR: "interior"}
 
 
 def _percept(row, layers=None):
-    layers = layers if bool(row["env_visible"]) and layers is not None else (None, None)
+    layers = layers if bool(row["env_visible"]) and layers is not None else (None, None, None)
     return Percept(int(row["dx"]), int(row["dy"]), int(row["occupant"]), int(row["species"]),
                    int(row["type"]), int(row["state"]), int(row["energy"]),
                    float(row["food"]), float(row["temp"]), bool(row["env_visible"]), *layers)
@@ -107,6 +108,7 @@ class Neighbor:
     material: int | None = None
     biome: int | None = None
     observed: bool = True
+    block: int | None = None
 
     @property
     def is_empty(self):
@@ -186,7 +188,7 @@ class Cell:
                 p = self.sense(dx, dy)
                 result.append(Neighbor(dx, dy, valid, bool(own), species, kind, state, energy, food,
                                        bool(self.bonds & (1 << bit)), p.material if p else None, p.biome if p else None,
-                                       self._percept_rows is None or p is not None))
+                                       self._percept_rows is None or p is not None, p.block if p else None))
         return result
 
     @property

@@ -66,7 +66,7 @@ NumPy / 跨语言数组使用保留包装对象：
 
 ## 4. 观察与身份
 
-v2 `observation` 包含 `version=2`、`tick`、清单哈希 `manifest`、`world_run`、`cells`、`tiles`、`events`、`constraints`；另有可选的 `materials`、`biomes`。`cells` 只含玩家自有细胞；`tiles` 将所有自有细胞允许感知的格子去重发送一次。`validate_observation()` 检查表布局、身份重复、坐标与层对齐；`expand_observation()` 自动执行该检查，再根据清单、角色、连接和半径重建逐细胞 `percepts`。
+v2 `observation` 包含 `version=2`、`tick`、清单哈希 `manifest`、`world_run`、`cells`、`tiles`、`events`、`constraints`；另有可选的 `materials`、`biomes`、`blocks`。`cells` 只含玩家自有细胞；`tiles` 将所有自有细胞允许感知的格子去重发送一次。`validate_observation()` 检查表布局、身份重复、坐标与层对齐；`expand_observation()` 自动执行该检查，再根据清单、角色、连接和半径重建逐细胞 `percepts`。
 
 | 情形 | 含义 | SDK 判断 |
 | --- | --- | --- |
@@ -77,13 +77,15 @@ v2 `observation` 包含 `version=2`、`tick`、清单哈希 `manifest`、`world_
 | occupant 5 | 世界外部，客户端展开时产生 | `not p.in_bounds` |
 | `env_visible=false` | 资源和环境没有被该观察者感知 | 不使用该格食物、温度、材料、群系 |
 
-隐藏属性用 `-1`；隐藏环境的食物为 `-1`、温度为 0，这个 0 不表示实测温度。materials / biomes 缺失不表示全是普通地面；存在时是与 tiles 逐行对应的 uint8 数组，未感知行填 0。SDK 的 `p.material`、`p.biome`、`cell.material_here`、`cell.biome_here` 在不可用时返回 `None`。`Neighbor.observed` 区分未感知，`empty_neighbors()` 只返回已知空格。
+隐藏属性用 `-1`；隐藏环境的食物为 `-1`、温度为 0，这个 0 不表示实测温度。materials / biomes / blocks 缺失不表示全是普通地面或没有方块；存在时是与 tiles 逐行对应的 uint8 数组，未感知行填 0。SDK 的 `p.material`、`p.biome`、`p.block`、`cell.material_here`、`cell.biome_here` 在不可用时返回 `None`。`Neighbor.observed` 区分未感知，`empty_neighbors()` 只返回已知空格。
 
 参考世界材料：0 普通、1 浆果、2 熔岩、3 尖刺；群系：0 未知、1 草地、2 森林、3 沙漠、4 冻原。数字效果由世界规则决定，不能把“材料 2 一定造成 5 点伤害”写进协议。目前没有通用的材料 / 环境层注册机制，这些层是参考实现的可选扩展。
 
-身份用 `(world_run, cell_id)` 与 `(world_run, entity_id)`，不能只按坐标或裸 ID 缓存。细胞移动保持 ID，出生获得新 ID，服务器重启换 world_run。Entity 按显式连接划分；分裂时主要片段保留编号，融合时贡献最多的原个体保留编号，平局取较小编号。结算后在发出下一次观察前更新身份。`cell.entity_id` / `entity.id` 来自服务端；legacy 适配器没有身份时为 `None`。Unity 目前没有服务端权威编号。
+身份用 `(world_run, cell_id)` 与 `(world_run, entity_id)`，不能只按坐标或裸 ID 缓存。细胞移动保持 ID，出生获得新 ID，服务器重启换 world_run。Entity 按显式连接划分；分裂时主要片段保留编号，融合时贡献最多的原个体保留编号，平局取较小编号。结算后在发出下一次观察前更新身份。`cell.entity_id` / `entity.id` 来自服务端；legacy 服务器提供可选 `sense_batch.local_observation` 时也有身份；旧服务器没有身份时为 `None`。Unity 目前没有服务端权威编号。
 
 事件种类为 result=0、born=1、died=2；born 的 other 是父细胞 ID。result 码为 ok=0、invalid=1、no_energy=2、duplicate=3、disabled=4、blocked=5、contested=6、interrupted=7、role=8。事件只关于自身细胞；无法归属的非法行不保证有单独事件。当前 died=2 的 code 2 汇总代谢 / 环境死亡，不细分熔岩等原因。
+
+新版 legacy 的 `sense_batch.local_observation` 是可选的 v2 格式局部观察扩展，供新版客户端获得方块等信息；客户端仍发送 legacy 格式行动，旧客户端可以忽略此扩展。旧服务端不提供该扩展时，方块感知为 `None`。
 
 有限感知世界的玩家不接收全图 snapshot / delta。历史地图记忆属于客户端推断，不能显示为实时感知。注意：同一玩家的观察在本地会合并，Entity / Unity 可以读取本玩家的整批信息；协议限制玩家能获得什么，不验证玩家程序内部是否只做局部计算，也不证明严格的条件独立性。
 

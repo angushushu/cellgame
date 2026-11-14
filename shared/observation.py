@@ -152,7 +152,7 @@ def validate_observation(obs: dict[str, Any], manifest: dict[str, Any]) -> None:
         raise ProtocolError("invalid cell role or radius")
     if not np.all(np.isin(tiles["occupant"], [EMPTY, MINE, OTHER, HIDDEN])):
         raise ProtocolError("invalid wire occupant code")
-    for key in ("materials", "biomes"):
+    for key in ("materials", "biomes", "blocks"):
         if key in obs:
             layer = obs[key]
             if not isinstance(layer, np.ndarray) or layer.dtype != np.uint8 or layer.shape != (len(tiles),):
@@ -305,6 +305,8 @@ def observation_to_world(obs: dict[str, Any], player_id: int, width: int, height
             world.env_biome[ys, xs] = np.asarray(obs["biomes"], dtype=np.uint8)
         if "materials" in obs and len(obs["materials"]) == len(tiles):
             world.env_material[ys, xs] = np.asarray(obs["materials"], dtype=np.uint8)
+        if "blocks" in obs and len(obs["blocks"]) == len(tiles):
+            world.blocks[ys, xs] = np.asarray(obs["blocks"], dtype=np.uint8)
     if len(cells):
         cx, cy = cells["x"].astype(int), cells["y"].astype(int)
         world.bonds[cy, cx] = cells["bonds"]
@@ -375,6 +377,7 @@ def remember(known: Any, seen: np.ndarray, view: Any, obs: dict[str, Any], playe
     known.env_temp[ys[visible], xs[visible]] = view.env_temp[ys[visible], xs[visible]]
     known.env_biome[ys[visible], xs[visible]] = view.env_biome[ys[visible], xs[visible]]
     known.env_material[ys[visible], xs[visible]] = view.env_material[ys[visible], xs[visible]]
+    known.blocks[ys[visible], xs[visible]] = view.blocks[ys[visible], xs[visible]]
     stale = (seen == 2) & (known.owner == player_id)
     for field in KNOWN_FIELDS:
         getattr(known, field)[stale] = 0
@@ -396,5 +399,6 @@ def observation_to_json(obs: dict[str, Any]) -> dict[str, Any]:
         "tiles": _table(obs["tiles"]),
         **({"biomes": np.asarray(obs["biomes"], dtype=np.uint8).tolist()} if "biomes" in obs else {}),
         **({"materials": np.asarray(obs["materials"], dtype=np.uint8).tolist()} if "materials" in obs else {}),
+        **({"blocks": np.asarray(obs["blocks"], dtype=np.uint8).tolist()} if "blocks" in obs else {}),
         "events": _table(np.asarray(obs.get("events", np.empty(0, dtype=EVENT_DTYPE)), dtype=EVENT_DTYPE)),
     }

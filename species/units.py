@@ -86,7 +86,7 @@ def _per_cell_views(observation, n):
         if not tile["env_visible"]:
             continue
         values = []
-        for key in ("materials", "biomes"):
+        for key in ("materials", "biomes", "blocks"):
             source = observation.get(key)
             values.append(int(source[i]) if source is not None and len(source) == len(tiles) else None)
         layers[(int(tile["x"]), int(tile["y"]))] = tuple(values)

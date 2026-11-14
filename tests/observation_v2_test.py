@@ -176,7 +176,7 @@ def test_expand_with_unknown_tiles_omits_rows():
     world = small_world()
     world.place_cell(1, 5, 5)
     wire = gather_observation(world, 1, RADIUS1)
-    for key in ("tiles", "materials", "biomes"):
+    for key in ("tiles", "materials", "biomes", "blocks"):
         wire[key] = wire[key][:0]  # optional layers stay aligned with the tile table
     obs = expand_observation(wire, RADIUS1)
     assert len(obs["percepts"]) == 0
